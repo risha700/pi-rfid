@@ -5,6 +5,7 @@ Raspberry PI library for MFRC522.
 
 Example program, Read.cpp, which will read rfid cards.
 
+
 This library uses the bcm2835 library found at:
 http://www.airspayce.com/mikem/bcm2835/bcm2835-1.50.tar.gz 
 
@@ -25,7 +26,7 @@ Fetch the tar-file and install it:
 
 To build:
 
-  g++ MFRC522.cpp Read.cpp -std=c++11 -lbcm2835
+  g++ MFRC522.cpp Read.cpp -std=c++11 -lbcm2835 -w -o read
 
 Pin Layout
 ----------
@@ -51,3 +52,9 @@ The following table shows the pin layout used:
 +-----------+----------+-------------+
 | GND       | GND      | 25          |
 +-----------+----------+-------------+
+
+
+**Credits**
+  **Thanks** to @luvbum introduced bcm2835 instead of Arduino SPI https://github.com/luvbum/RPi-RFID.git
+  
+  **Thanks** to @miguelbalboa for the awesome work https://github.com/miguelbalboa/rfid.git
