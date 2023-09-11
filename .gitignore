@@ -1,0 +1,12 @@
+GeoLite/
+cert/
+/pgadmin
+.venv/
+.idea/
+.DS_Store
+/app
+docker_data/
+.env
+__pycache__/
+env/
+.vscode/
