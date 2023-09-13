@@ -897,7 +897,7 @@ byte MFRC522::MIFARE_Write(	byte blockAddr, ///< MIFARE Classic: The block (0-0x
   if (result != STATUS_OK) {
     return result;
   }
-
+	
   // Step 2: Transfer the data
   result = PCD_MIFARE_Transceive(buffer, bufferSize); // Adds CRC_A and checks that the response is MF_ACK.
   if (result != STATUS_OK) {
@@ -1388,9 +1388,9 @@ void MFRC522::PICC_DumpMifareClassicSectorToSerial(Uid *uid,			///< Pointer to U
     if (isSectorTrailer) {
       status = PCD_Authenticate(PICC_CMD_MF_AUTH_KEY_A, firstBlock, key, uid);
       if (status != STATUS_OK) {
-	printf("PCD_Authenticate() failed: ");
-	printf("%s\n",GetStatusCodeName(status).c_str());
-	return;
+          printf("PCD_Authenticate() failed: ");
+          printf("%s\n",GetStatusCodeName(status).c_str());
+          return;
       }
     }
     // Read block
