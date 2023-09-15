@@ -3,6 +3,8 @@
 
 #include <cstdio>
 #include "MFRC522.h"
+#include "Arduino.h"
+#include "bcm2835.h"
 
 #define RST_PIN  RPI_V2_GPIO_P1_22             // Configurable, see typical pin layout above
 #define SS_PIN RPI_V2_GPIO_P1_24 // Configurable, see typical pin layout above
