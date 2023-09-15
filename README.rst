@@ -32,7 +32,7 @@ Pin Layout
 ----------
 
 The following table shows the pin layout used:
-
+ 
 +-----------+----------+-------------+
 |           | MFRC522  | Raspberry Pi|
 +-----------+----------+-------------+
