@@ -10,3 +10,4 @@ docker_data/
 __pycache__/
 env/
 .vscode/
+.DS_Store

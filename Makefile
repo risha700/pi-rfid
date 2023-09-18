@@ -8,8 +8,12 @@ SRC_FILES = $(wildcard $(SRC_DIR)/src/*.cpp) $(wildcard $(SRC_DIR)/src/**/*.cpp)
 # SRC_FILES = MFRC522.cpp main.cpp
 TARGET = rfid_admin
 
+# links
 BCM2835_LIB = bcm2835
-INCLUDE_DIRS = -Isrc/ -Isrc/RPi-Arduino-SPI/ #-I/usr/local/include/
+SSL_LIB = ssl 
+CRYPTO_LIB = crypto
+
+INCLUDE_DIRS = -Isrc/ -Isrc/RPi-Arduino-SPI/ -Isrc/mfrc522/ #-I/usr/local/include/
 
 default: all
 
