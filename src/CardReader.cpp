@@ -136,7 +136,7 @@ MFRC522Extended::MIFARE_Key CardReader::generate_key(byte block, bool dump_hex){
 }
 
 /*
-  
+  Reads MIFARE type 1kb or 4kb
 */
 void CardReader::read_block(byte block, bool dump_hex){
   // MFRC522::MIFARE_Key default_key = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
@@ -174,6 +174,9 @@ void CardReader::read_block(byte block, bool dump_hex){
   
 }
 
+/*
+  Writes MIFARE type 1kb or 4kb
+*/
 
 void CardReader::write_block(byte block){
   std::string userInput;
@@ -197,6 +200,10 @@ void CardReader::write_block(byte block){
   printf("\nWrite successful\n");
 
 }
+
+/*
+  Dumps card type and UID
+*/
 
 void CardReader::dump_tag_info(){
       MFRC522Extended::PICC_Type piccType = PICC_GetType(this->uid.sak);

@@ -50,8 +50,8 @@ int main() {
   //     // rfid.PICC_DumpToSerial(&rfid.tag);
   //     delay(500);
   //     // release bus
-  //     rfid.PICC_HaltA();
-  //     rfid.PCD_StopCrypto1();
+      // rfid.PICC_HaltA();
+      // rfid.PCD_StopCrypto1();
   // }
   return 0;
 }

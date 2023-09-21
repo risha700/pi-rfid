@@ -4,4 +4,4 @@ cd pi-rfid
 make clean
 make all
 sudo ./rfid_admin
-wait $?
+wait $? 2&1>/dev/null

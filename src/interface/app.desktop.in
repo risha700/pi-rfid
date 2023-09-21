@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=RFID Admin
+GenericName=RFID Admin
+Comment=Raspberry pi mfrc522 admin interface
+Icon=rfid
+StartupNotify=true
+Exec=@bindir@/app %U
+Categories=MFRC522;Utility;OPAIC

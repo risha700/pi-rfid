@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+    <gresource prefix="/app">
+        <file>sec.jpg</file>
+        <file>tap_nfc.png</file>
+        <file>rfid.png</file>
+    </gresource>
+</gresources>
