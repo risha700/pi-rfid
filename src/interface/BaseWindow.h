@@ -18,10 +18,12 @@ protected:
     bool on_window_key_pressed(guint keyval, guint keycode, Gdk::ModifierType state);
 
     Glib::RefPtr<Gio::SimpleAction> m_refChoice;
-    Gtk::Box login_container;
+    Gtk::Box container;
+    Gtk::Label message;
+    Gtk::Label reader_status;
     Gtk::Image hero_image;
     Gtk::TextView m_text;
-  
+    Gtk::Stack m_stack;
 };
 
 #endif // BASEWINDOW_H
