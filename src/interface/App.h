@@ -7,7 +7,6 @@
 
 #include <gtkmm.h>
 #include "LoginWindow.h"
-//class LoginWindow;
 
 class App: public Gtk::Application
 {

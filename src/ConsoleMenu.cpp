@@ -23,14 +23,14 @@ ConsoleMenu::ConsoleMenu(CardReader* rfid)
     std::cout << "Place NFC tag! "<<std::endl;
     
     while (true) {
-        if(rfid->PICC_IsNewCardPresent() && rfid->PICC_ReadCardSerial())
+        while(rfid->PICC_IsNewCardPresent() && rfid->PICC_ReadCardSerial())
         {
             // Display the menu options
-            std::cout << "\nRFID Card detected \n Menu:\t" << std::endl;
+            std::cout << "\nRFID Card detected \n" << std::endl;
             // Iterate over the key-value pairs in the map
             for (const auto& pair : menu_options) {
                 action = pair.second;
-                std::cout << pair.first << " => : " << pair.second << std::endl;
+                std::cout << pair.first << " -> " << pair.second << std::endl;
             }
             // Prompt the user for their choice
             std::cout << "Enter your choice: ";
@@ -53,9 +53,10 @@ ConsoleMenu::ConsoleMenu(CardReader* rfid)
                     break;
                 case 4:
                     rfid->PICC_DumpDetailsToSerial(&rfid->tag);
+                    rfid->PICC_DumpToSerial(&rfid->tag);
                     break;
                 case 5:
-                    std::cout << "Exiting the program."<< menu_options[choice] << std::endl;
+                    std::cout << "Exiting Bye Bye..."<< menu_options[choice] << std::endl;
                     exit(0);
                 default:
                     std::cout << "Invalid choice. Please try again. \t" << std::endl;
@@ -64,9 +65,9 @@ ConsoleMenu::ConsoleMenu(CardReader* rfid)
             }
 
         }
-        rfid->PCD_StopCrypto1();  
         rfid->PICC_HaltA();
-        delay(250);
+        rfid->PCD_StopCrypto1();  
+        delay(1000);
 
     }
 

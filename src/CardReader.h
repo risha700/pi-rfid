@@ -1,3 +1,14 @@
+/**
+ * 
+ * Owner: Ahmed A. <ahbox@outlook.com>
+ * Description: CardReader is a wrapper around MFRC522 class supports rasperry-pi GPIO through bcm2835 library
+ * 
+ * Project: Otago - OPAIC Platform and devices submission 09-2023
+ * Source Code: git@github.com:risha700/pi-rfid.git
+ * License: MIT 
+ * 
+ *  
+ */
 #ifndef CARDREADER_H
 #define CARDREADER_H
 
