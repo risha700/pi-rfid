@@ -7,21 +7,28 @@
 
 #include <gtkmm.h>
 #include "LoginWindow.h"
+#include "NetworkClient.h"
 
 class App: public Gtk::Application
 {
 protected:
     App();
+    ~App();
     
     Glib::RefPtr<Gtk::Builder> m_refBuilder;
 
 
 public:
     static Glib::RefPtr<App> create();
-    bool is_authenticated;
+    bool is_authenticated{};
     LoginWindow login_window;
-    void on_login_state_change();
 
+    NetworkClient network_client;
+
+//    NetworkClient* network_client{nullptr};
+    void on_login_state_change();
+    void on_data_received(const std::string& data);
+    bool on_time_out();
 protected:
     // Override default signal handlers:
     void on_activate() override;
@@ -35,7 +42,8 @@ private:
     
 
 };
+//NetworkClient* App::network_client = nullptr;
 
-
+//NetworkClient* App::network_client = nullptr;
 
 #endif //INTERFACE_APP_H

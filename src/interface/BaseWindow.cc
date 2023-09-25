@@ -21,12 +21,14 @@ BaseWindow::BaseWindow():
     container.prepend(hero_image);
     
      //CSS style
-    Glib::ustring data = ".hero {clip-path: circle(50px at 0 100px);width: 200px;height: 200px;object-fit:fill;}";
-    auto provider = Gtk::CssProvider::create();
-    provider->load_from_data(data);
-    auto ctx = hero_image.get_style_context();
-    ctx->add_class("hero");
-    ctx->add_provider(provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
+//    Glib::ustring data = ".hero {clip-path: circle(50px at 0 100px);width: 200px;height: 200px;object-fit:fill;}";
+//    auto provider = Gtk::CssProvider::create();
+//    provider->load_from_data(data);
+//    auto ctx = hero_image.get_style_context();
+//    ctx->add_class("hero");
+//    ctx->add_provider(provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
+
+
     m_stack.add(container);
     message.set_text("place RFID tag");
     container.append(message);
@@ -67,6 +69,8 @@ bool BaseWindow::on_window_key_pressed(guint keyval, guint, Gdk::ModifierType st
 {
 
     reader_status.set_text("Reader Connected!");
+
+
 //    std::cout << "Key pressed "<< keyval << " state " << static_cast<int >(state) << std::endl;
 
     if((keyval == GDK_KEY_w) &&

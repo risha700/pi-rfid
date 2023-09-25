@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -w -std=c++17
+CXXFLAGS = -Wall -std=c++17
 
 PKGCONFIG = $(shell which pkg-config)
 CFLAGS = $(shell $(PKGCONFIG) gtkmm-4.0 --cflags --libs)
