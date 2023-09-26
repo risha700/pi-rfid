@@ -1,4 +1,5 @@
 #include "BaseWindow.h"
+#include "App.h"
 #include <iostream>
 #include <gtkmm/settings.h>
 #include <gtkmm/eventcontrollerkey.h>
@@ -13,13 +14,18 @@ BaseWindow::BaseWindow():
 {
     set_title("RFID Admin");
     set_size_request(800, 800);
+
     container.set_margin(10);
     container.set_valign(Gtk::Align::BASELINE_FILL);
     hero_image.set_size_request(70,70);
     hero_image.set("rfid.png");
     hero_image.set_halign(Gtk::Align::BASELINE_CENTER);
     container.prepend(hero_image);
-    
+
+    m_btn.set_label("check connection");
+    m_btn.set_halign(Gtk::Align::START);
+    m_btn.signal_clicked().connect(sigc::mem_fun(*this,&BaseWindow::on_button_clicked));
+    container.append(m_btn);
      //CSS style
 //    Glib::ustring data = ".hero {clip-path: circle(50px at 0 100px);width: 200px;height: 200px;object-fit:fill;}";
 //    auto provider = Gtk::CssProvider::create();
@@ -53,6 +59,8 @@ BaseWindow::BaseWindow():
     add_controller(controller);
 
 
+    auto app = App::get_instance();
+    app->network_client.signal_data_received.connect(sigc::mem_fun(*this, &BaseWindow::on_data_received));
 
 }
 
@@ -61,14 +69,24 @@ BaseWindow::BaseWindow():
 void BaseWindow::on_button_clicked()
 {
 
-  std::cout << "Hello Interface "<< std::endl;
+    std::cout << "Hello Interface "<< std::endl;
+    reader_status.set_text("checking...");
+
+    auto app = App::get_instance();
+    app->network_client.socket_send("Ping static");
+
+
+}
+void BaseWindow::on_data_received(const std::string &data) {
+    // update UI
+    std::cout << "Data received fired in base window... "<< data.c_str() << std::endl;
+
+    reader_status.set_text(data.c_str());
 
 }
 
 bool BaseWindow::on_window_key_pressed(guint keyval, guint, Gdk::ModifierType state)
 {
-
-    reader_status.set_text("Reader Connected!");
 
 
 //    std::cout << "Key pressed "<< keyval << " state " << static_cast<int >(state) << std::endl;

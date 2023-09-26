@@ -9,32 +9,34 @@
 #include "LoginWindow.h"
 #include "NetworkClient.h"
 
+
+
 class App: public Gtk::Application
 {
 protected:
     App();
-    ~App();
+//    virtual ~App();
     
     Glib::RefPtr<Gtk::Builder> m_refBuilder;
 
 
 public:
     static Glib::RefPtr<App> create();
-    bool is_authenticated{};
+    bool is_authenticated=false;
     LoginWindow login_window;
-
     NetworkClient network_client;
 
-//    NetworkClient* network_client{nullptr};
     void on_login_state_change();
     void on_data_received(const std::string& data);
     bool on_time_out();
+
+    static App* get_instance();
 protected:
     // Override default signal handlers:
     void on_activate() override;
     void on_open(const Gio::Application::type_vec_files& files,
                  const Glib::ustring& hint) override;
-                 
+    static App* instance;
 
 private:
     auto * create_app_window();
@@ -45,5 +47,6 @@ private:
 //NetworkClient* App::network_client = nullptr;
 
 //NetworkClient* App::network_client = nullptr;
+// Declare a global pointer to your custom application instance
 
 #endif //INTERFACE_APP_H

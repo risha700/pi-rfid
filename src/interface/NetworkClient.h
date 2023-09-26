@@ -31,17 +31,20 @@ public:
     int clientSocket=-1;
     std::thread network_thread;
     bool network_thread_running= false;
-    void socket_send(const char* & buff);
+//    void socket_send(const char* & buff);
+    void socket_send(const std::string&);
 
 
 private:
     void set_label_text(const std::string& text);
     struct sockaddr_in serverAddress{};
     int init_socket();
+    void start_bg();
     void authorize_socket();
+//    std::queue<std::function<void(int, NetSignal, std::string)>> job_queue;
     std::queue<std::function<void(int)>> job_queue;
     std::mutex job_queue_mutex;
     std::condition_variable job_queue_condition;
-    // Other members for socket, buffers, etc.
+
 };
 #endif //INTERFACE_NETWORKCLIENT_H

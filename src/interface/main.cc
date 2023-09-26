@@ -9,5 +9,7 @@ int main(int argc, char* argv[])
 //    return app->make_window_and_run<Interface>(argc, argv);
 
     auto application =  App::create();
+
+
     return application->run(argc, argv);
 }

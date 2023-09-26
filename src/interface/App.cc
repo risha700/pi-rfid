@@ -10,58 +10,58 @@
 #include <string>
 #include "NetworkClient.h"
 
+#ifndef AUTH_FS
+#define AUTH_FS "/tmp/rfid.sys"
+#endif
+App* App::instance = nullptr;
 
 App::App():
 Gtk::Application("rfid.opaic.assignment.sep.nz", Gio::Application::Flags::HANDLES_OPEN) {
-    // handle auth
-//    network_client = nullptr;
-    is_authenticated = false;
+    // connect signals
     login_window.signal_login_event.connect(sigc::mem_fun(*this, &App::on_login_state_change));
-//    App::network_client = nullptr;
-//    dynamic_cast<NetworkClient*>(network_client);
-//    network_client = nullptr;
-    // handle network
-
     network_client.signal_data_received.connect(sigc::mem_fun(*this, &App::on_data_received));
+
     // test network
     Glib::signal_timeout().connect( sigc::mem_fun(*this, &App::on_time_out),10 );
 
+    instance = this; // set the static instance
 
 }
 
-App::~App(){
-//    delete network_client;
-    network_client.stop(); // force blocking join
+// static
+App* App::get_instance() {
+    return instance;
 }
-void test_echo() {
-    std::cout<<"Hi from thread"<<std::endl;
+
+//App::~App(){}
+void debug_thread(NetworkClient *network_client, int rounds=3){
+    for (int i = 0; i < rounds; ++i) {
+        const char*  msg="yoo programming ";
+        int length = std::snprintf(nullptr, 0, "%s%d", msg, i);
+        char* combinedString = new char[length + 1];
+        std::snprintf(combinedString, length + 1, "%s%d", msg, i);
+        network_client->socket_send(combinedString);
+        delete[] combinedString;
+    }
 }
 bool App::on_time_out() {
-// if(network_client.clientSocket!= -1){
-//    network_client.network_thread.(network_client.test_socket());
-//    network_client.network_thread.join();
-
-    network_client.test_socket();
-    network_client.test_socket();
-    network_client.test_socket();
-
+//    debug_thread(&network_client);
 //    network_client.socket_send("Hi");
-//    network_client.socket_send("Hello programming!");
-//    network_client.socket_send("Hey C++!");
-//    network_client.socket_send("yet a different message");
-
-// }
     return false;
 }
 
 Glib::RefPtr<App> App::create()
 {
     return Glib::make_refptr_for_instance<App>(new App());
+
 }
 
 void App::on_data_received(const std::string &data) {
-
+    // update UI
     std::cout << "Data received fired... "<< data.c_str() << std::endl;
+
+
+
 }
 
 auto* App::create_login_window()
@@ -111,12 +111,13 @@ void App::on_activate()
 {
     // The application has been started, so let's show a window.
     std::fstream app_file;
-    app_file.open("/tmp/rfid.sys", std::ios::in);
+    app_file.open(AUTH_FS, std::ios::in);
     if(app_file){
         // quick and dirty for now
         is_authenticated = true;
     }
     app_file.close();
+
 
     // check if authenticated
     if(is_authenticated){

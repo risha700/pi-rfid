@@ -9,7 +9,8 @@ class BaseWindow: public Gtk::ApplicationWindow
 public:
     BaseWindow();
 
-
+    void on_data_received(const std::string& data);
+    
     // void open_file_view(const Glib::RefPtr<Gio::File>& file);
 protected:
     //Signal handlers:
@@ -19,6 +20,7 @@ protected:
 
     Glib::RefPtr<Gio::SimpleAction> m_refChoice;
     Gtk::Box container;
+    Gtk::Button m_btn;
     Gtk::Label message;
     Gtk::Label reader_status;
     Gtk::Image hero_image;

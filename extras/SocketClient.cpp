@@ -11,7 +11,7 @@
 int main() {
     // TODO: set it from env
     const char* iot_server_ip = "192.168.1.201";  
-    int iot_server_port = 12345;              
+    int iot_server_port = 8080;              
 
     int clientSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (clientSocket == -1) {
@@ -39,9 +39,25 @@ int main() {
     const char* username = "user";
     std::string token = "supersecret";
     std::string authData = username + std::string(":") + token;
-    send(clientSocket, authData.c_str(), authData.length(), 0);
+    ssize_t bytesSent;
+    bytesSent = send(clientSocket, authData.c_str(), authData.length(), 0);
+        if (bytesSent == -1) {
+        std::cerr << "Error sending data: " << strerror(errno) << std::endl;
+    } else {
+        std::cout << "Sent: " <<  authData.c_str() << std::endl;
 
-    ssize_t bytesSent = send(clientSocket, message, strlen(message), 0);
+        char buffer[1024]; // Buffer to hold received data
+        ssize_t bytesRead = recv(clientSocket, buffer, sizeof(buffer), 0);
+        if (bytesRead == -1) {
+            std::cerr << "Error receiving data: " << strerror(errno) << std::endl;
+        } else {
+            buffer[bytesRead] = '\0'; // Null-terminate the received data
+            std::cout << "Received: " << buffer << std::endl;
+        }
+    }
+
+    // recv(clientSocket, buffer, sizeof(buffer), 0);
+    bytesSent = send(clientSocket, message, strlen(message), 0);
 
     if (bytesSent == -1) {
         std::cerr << "Error sending data: " << strerror(errno) << std::endl;
