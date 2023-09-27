@@ -6,9 +6,13 @@ Raspberry PI library for MFRC522.
 Example program, Read.cpp, which will read rfid cards.
 
 
+dependecies:
+```
 This library uses the bcm2835 library found at:
 http://www.airspayce.com/mikem/bcm2835/bcm2835-1.50.tar.gz 
 
+sudo apt-get install libsigc++-dev 
+```
 Or Alternatively install_bcm script should get it ready:
 
   sudo install_bcm.sh

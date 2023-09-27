@@ -1,0 +1,58 @@
+# Compiler and flags
+CXX = g++
+CXXFLAGS = -w -std=c++17
+
+# Source files and target
+SRC_DIR = .
+SRC_FILES = $(SRC_DIR)/NetworkServer.cpp
+PKGCONFIG = $(shell which pkg-config)
+CFLAGS = 
+
+
+INCLUDE_DIRS =
+# Determine the operating system
+UNAME := $(shell uname)
+SIGC_LIB =
+
+# Conditionally set include directories based on the operating system
+ifeq ($(UNAME), Linux)
+    CFLAGS += -I/usr/include/sigc++-2.0/sigc++
+    CFLAGS += $(shell $(PKGCONFIG) sigc++-2.0 --cflags  --libs )
+#    INCLUDE_DIRS += NetworkServer.cpp -I/usr/include/sigc++-2.0/sigc++ -I/usr/include/sigc++-2.0 -I/usr/lib/arm-linux-gnueabihf/sigc++-2.0/include -lsigc-2.0
+#    SIGC_LIB = sigc-2.0
+endif
+ifeq ($(UNAME), Darwin)  # macOS
+    CFLAGS += -I/usr/local/include/sigc++-3.0/sigc++
+    CFLAGS += $(shell $(PKGCONFIG) sigc++-3.0 --cflags  --libs )
+    # INCLUDE_DIRS += -Isrc/ -Isrc/RPi-Arduino-SPI/ -Isrc/mfrc522/ -I/usr/local/include/sigc++-3.0/ -I/usr/local/include/sigc++-3.0/sigc++ -I/usr/local/Cellar/libsigc++/3.4.0/lib/sigc++-3.0/include -lsigc-3.0
+    # SIGC_LIB = sigc-3.0
+endif
+ifeq ($(findstring CYGWIN, $(UNAME)), CYGWIN)
+    # adjust windows headers
+    # INCLUDE_DIRS += -I/cygwin/include/directory
+endif
+
+
+
+# SRC_FILES = MFRC522.cpp main.cpp
+TARGET = server_test
+
+# links
+BCM2835_LIB = bcm2835
+SSL_LIB = ssl 
+CRYPTO_LIB = crypto
+
+
+.PHONY: all clean
+
+default: all
+
+all: $(TARGET)
+
+$(TARGET): $(SRC_FILES)
+	$(CXX) $(CXXFLAGS) -o $(TARGET) $(SRC_FILES) $(CFLAGS) 
+#	$(CXX) $(CXXFLAGS) -o $(TARGET) $(SRC_FILES) $(INCLUDE_DIRS)
+
+
+clean:
+	rm -f $(TARGET) 
