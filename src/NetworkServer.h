@@ -35,6 +35,14 @@ enum class RequestType
 };
 
 
+//
+// we allowed yet 2048 bytes/ 2mb buffer for each request request structure 
+// AUTH:username:token
+// READ:
+// WRITE: string value
+// DUMP: 
+
+
 class NetworkServer
 {
 private:
@@ -43,10 +51,7 @@ private:
    struct sockaddr_in serverAddress;
    struct sockaddr_in clientAddress;
    std::thread server_thread;
-    using NetSignal = sigc::signal<void(const std::string&)>;
-    NetSignal signal_data_received;
-
-
+   using NetSignal = sigc::signal<void(const std::string&)>;
    bool server_thread_running=false;
    void stop();
    void start();
@@ -64,21 +69,15 @@ private:
 public:
     NetworkServer();
     ~NetworkServer();
-   void keep_listening();
-   ReaderSignal signal_card_reader;
+    void keep_listening();
+    NetSignal signal_data_received;
+    ReaderSignal signal_card_reader;
 
 
 };
 
 
 
-
-//
-// we allowed yet 2048 bytes/ 2mb buffer for each request request structure 
-// AUTH:username:token
-// READ:
-// WRITE: string value
-// DUMP: 
 
 struct RFIDRequest {
     RequestType type;
@@ -95,7 +94,8 @@ struct RFIDRequest {
     std::string response="ERROR_GENERIC";
     
     ReaderSignal reader_signal;
-    std::string note = "**signal reader**";
+    std::string command = "**signal reader**";
+
     std::function<void()> fn;
     void process_req_data(const std::string &raw_data){
         std::istringstream iss(raw_data);
@@ -119,9 +119,10 @@ struct RFIDRequest {
                     break;
                 case RequestType::RFID_AUTH:
                     // TODO: check auth and assign response
-                 
-                     reader_signal.emit((const std::string&)note);
-                    std::cout << "GOT RFID_AUTH" << std::endl;
+                     command = "RFID_AUTH";
+                     reader_signal.emit((const std::string&)command);
+                     response = "PROCESSING";
+                    std::cout << "RFID_AUTH" << std::endl;
                     break;
                 case RequestType::RFID_READ:
                     // check if auth
@@ -129,13 +130,19 @@ struct RFIDRequest {
                     // scan and send back results form card reader
                      // const char* note = "**emitted**";
                      // signal.emit(const_cast<std::string&>(note));
+                     command = "RFID_READ";
+                     reader_signal.emit((const std::string&)command);
+                     response = "PROCESSING";
                      std::cout << "RFID_READ"<< std::endl;
                     break;
                 case RequestType::RFID_WRITE:
                     if(tokens.size() >=2){
                         data = tokens[1];
-                        response=data; // todo send signal to reader
+                        // response=data; // todo send signal to reader
                     }
+                    command = "RFID_WRITE";
+                    reader_signal.emit((const std::string&)command);
+                    response = "PROCESSING";
                     std::cout << "RFID_WRITE-"<<"DATA:\t"<<data.c_str()<< std::endl;
                     break; 
                 case RequestType::RFID_DUMP:

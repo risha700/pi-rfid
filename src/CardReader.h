@@ -12,6 +12,7 @@
 #ifndef CARDREADER_H
 #define CARDREADER_H
 
+#include "NetworkServer.h"
 #include "bcm2835.h"
 #include "MFRC522Extended.h"
 
@@ -45,6 +46,8 @@ public:
     void dump_tag_info();
     void on_signal_received(const std::string &data);
     // todo interface
+    NetworkServer network_server;
+
    
 
 };

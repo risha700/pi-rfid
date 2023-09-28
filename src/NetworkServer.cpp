@@ -6,79 +6,61 @@
 
 void NetworkServer::keep_listening(){
 
-    // init_socket_server();
-    // accept connection
-    socklen_t clientAddressLength = sizeof(clientAddress);
-    clientSocket = accept(serverSocket, (struct sockaddr*)&clientAddress, &clientAddressLength);
-    if (clientSocket == -1) {
-        std::cerr << "Error accepting connection: " << strerror(errno) << std::endl;
-        close(serverSocket);
-        exit(1);
-    }
-    std::cout << "Accepted a connection from " << inet_ntoa(clientAddress.sin_addr) << std::endl;
-    
-
-    // start receiving
-    char buffer[2048]; // Buffer to hold received data
-    ssize_t bytesRead=-1;
-
-    // Read data from the client **blocking
-    while ((bytesRead = recv(clientSocket, buffer, sizeof(buffer),0)) > 0) {
-        // Process the received data (you can modify this part
-        buffer[bytesRead] = '\0'; // Null-terminate the received data
-        auto req = new RFIDRequest();
-        req->reader_signal = signal_card_reader; // pass the signal
-        req->process_req_data((const std::string&)buffer);
+    while (true)
+    {   
+        // init_socket_server();
+        // accept connection
+        socklen_t clientAddressLength = sizeof(clientAddress);
+        clientSocket = accept(serverSocket, (struct sockaddr*)&clientAddress, &clientAddressLength);
+        if (clientSocket == -1) {
+            std::cerr << "Error accepting connection: " << strerror(errno) << std::endl;
+            close(serverSocket);
+            exit(1);
+        }
+        std::cout << "Accepted a connection from " << inet_ntoa(clientAddress.sin_addr) << std::endl;
         
-        // std::string note = "**signal reader**";
-        // signal_card_reader.emit((const std::string&)note);
 
-        ssize_t bytesSent = send(clientSocket, req->response.c_str(), req->response.length(), 0);
-        // req->response.c_str();
-        // delete req;
-        // QUEUE THE JOBS
-        // SWITCH REQUEST TYPE
-        // SEND PROPER SIGNALS
-        
-        // signal_data_received.emit((const std::string&)buffer);
-        // std::cout << "Received " << bytesRead << " bytes from client: " << buffer << std::endl;
-        // ssize_t bytesSent = send(clientSocket, buffer, bytesRead, 0);
+        // start receiving
+        char buffer[2048]; // Buffer to hold received data
+        ssize_t bytesRead=-1;
+
+        // Read data from the client **blocking
+        while ((bytesRead = recv(clientSocket, buffer, sizeof(buffer),0)) > 0) {
+            // Process the received data (you can modify this part
+            // buffer[bytesRead] = '\0'; // Null-terminate the received data
+            auto req = new RFIDRequest();
+            req->reader_signal = signal_card_reader; // pass the signal
+            req->process_req_data((const std::string&)buffer);
+
+            ssize_t bytesSent = send(clientSocket, req->response.c_str(), req->response.length(), 0);
+
+            // delete req;
+            // req->response.c_str();
+            // delete req;
+            // QUEUE THE JOBS
+            // SWITCH REQUEST TYPE
+            // SEND PROPER SIGNALS
+            
+            // signal_data_received.emit((const std::string&)buffer);
+            // std::cout << "Received " << bytesRead << " bytes from client: " << buffer << std::endl;
+            // ssize_t bytesSent = send(clientSocket, buffer, bytesRead, 0);
+        }
+
+        if (bytesRead == -1) 
+        {
+            std::cerr << "Error receiving data: " << strerror(errno) << std::endl;
+            close(clientSocket);
+            std::cout << "Connection closed to "<< inet_ntoa(clientAddress.sin_addr)<< std::endl;  
+
+        }
+        if (bytesRead == 0)
+        {
+            close(clientSocket);
+            std::cout << "Connection closed to "<< inet_ntoa(clientAddress.sin_addr)<< std::endl;
+        }
+
+
     }
-
-    if (bytesRead == -1) 
-    {
-        std::cerr << "Error receiving data: " << strerror(errno) << std::endl;
-    }
-    if (bytesRead == 0)
-    {
-        close(clientSocket);
-        std::cout << "Connection closed to "<< inet_ntoa(clientAddress.sin_addr)<< std::endl;                
-    }
-
-    
-    // set a policy for the bytes structure
-    // 
-    
-    // // Split received data into username and token
-
-    // char* username = strtok(buffer, ":");
-    // char* token = strtok(NULL, ":");
-
-    // if (username != NULL && token != NULL) {
-    //         // std::cout << "Token " << token<< "username "<<username << std::endl;
-    //         std::cout << "Token "<<token << std::endl;
-    //     // Check if the token matches the one generated for the user
-    //     std::string storedToken = "supersecret"; // COMPARE IT TO THE ENCRYPTED DIGEST
-    //     if (storedToken == token) {
-    //         send(clientSocket, "Authentication successful\0", 26, 0);
-    //     } else {
-    //         send(clientSocket, "Authentication failed\0", 22, 0);
-    //     }
-    // }
-
-
-
-
 
 
 }
@@ -199,7 +181,7 @@ NetworkServer::NetworkServer(/* args */)
 
     start();
 
-    // run_bg(run_echo);
+    // run_bg(&run_echo);
     // run_bg(dynamic_cast<const std::function<void>&>(keep_listening));
 }
 void NetworkServer::on_data_received(const std::string &data) {
@@ -209,7 +191,7 @@ void NetworkServer::on_data_received(const std::string &data) {
     // req->process_req_data(data);
     // delete req;
     // authenticate(data); // go up the chain before firing TODO: 
-
+    ssize_t bytesSent = send(clientSocket, data.c_str(), data.length(), 0);
 }
 
 void NetworkServer::authenticate(const std::string &data){

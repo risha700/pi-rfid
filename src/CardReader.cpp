@@ -64,6 +64,7 @@ CardReader::CardReader(RPiGPIOPin SS_PIN, RPiGPIOPin RST_PIN):MFRC522Extended::M
   // dump info about the connected reader
   printf("Connected\n");
   PCD_DumpVersionToSerial();
+  network_server.signal_card_reader.connect(sigc::mem_fun(*this, &CardReader::on_signal_received));
 }
 
 /**
@@ -73,17 +74,18 @@ CardReader::~CardReader(){
   // book keeping
   // PICC_HaltA(); 
   // PCD_StopCrypto1();
+
 }
 
-void CardReader::on_signal_received(const std::string &data){
-   std::cout<<"on signal received fired"<< data.c_str()<<std::endl;
+void CardReader::on_signal_received(const std::string &command){
+   std::cout<<"on signal received fired"<< command.c_str()<<std::endl;
    // now in network thread processing
-   
-  //  MFRC522Extended::PICC_Type piccType = PICC_GetType(this->uid.sak);
-  //  auto answer  =  PICC_GetTypeName(piccType).c_str();
 
-   
+   MFRC522Extended::PICC_Type piccType = PICC_GetType(this->uid.sak);
+   auto answer = PICC_GetTypeName(piccType).c_str();
 
+   network_server.signal_data_received.emit((const std::string&)answer);
+   
 
 }
 /*
