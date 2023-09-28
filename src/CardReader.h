@@ -43,7 +43,7 @@ public:
     void read_block(byte block=8, bool dump_hex=false);
     void write_block(byte block);
     void dump_tag_info();
-    
+    void on_signal_received(const std::string &data);
     // todo interface
    
 

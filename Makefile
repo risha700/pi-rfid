@@ -16,6 +16,7 @@ TARGET = rfid_admin
 ifeq ($(UNAME), Linux)
     CFLAGS += -I/usr/include/sigc++-2.0/sigc++
     CFLAGS += $(shell $(PKGCONFIG) sigc++-2.0 --cflags  --libs )
+    CXXFLAGS +=-pthread
 endif
 ifeq ($(UNAME), Darwin)  # macOS
     # CFLAGS += -I/usr/local/include/sigc++-3.0/sigc++

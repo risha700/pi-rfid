@@ -21,6 +21,8 @@ Gtk::Application("rfid.opaic.assignment.sep.nz", Gio::Application::Flags::HANDLE
     login_window.signal_login_event.connect(sigc::mem_fun(*this, &App::on_login_state_change));
     network_client.signal_data_received.connect(sigc::mem_fun(*this, &App::on_data_received));
 
+//    Glib::RefPtr<Gtk::Settings> settings = Gtk::Settings::get_default();
+
     // test network
     Glib::signal_timeout().connect( sigc::mem_fun(*this, &App::on_time_out),10 );
 

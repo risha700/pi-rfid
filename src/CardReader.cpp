@@ -75,6 +75,17 @@ CardReader::~CardReader(){
   // PCD_StopCrypto1();
 }
 
+void CardReader::on_signal_received(const std::string &data){
+   std::cout<<"on signal received fired"<< data.c_str()<<std::endl;
+   // now in network thread processing
+   
+  //  MFRC522Extended::PICC_Type piccType = PICC_GetType(this->uid.sak);
+  //  auto answer  =  PICC_GetTypeName(piccType).c_str();
+
+   
+
+
+}
 /*
 * try authenticate against given key and byte block
 */

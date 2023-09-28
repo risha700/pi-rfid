@@ -26,8 +26,23 @@ void NetworkServer::keep_listening(){
     while ((bytesRead = recv(clientSocket, buffer, sizeof(buffer),0)) > 0) {
         // Process the received data (you can modify this part
         buffer[bytesRead] = '\0'; // Null-terminate the received data
-        std::cout << "Received " << bytesRead << " bytes from client: " << buffer << std::endl;
-        ssize_t bytesSent = send(clientSocket, buffer, bytesRead, 0);
+        auto req = new RFIDRequest();
+        req->reader_signal = signal_card_reader; // pass the signal
+        req->process_req_data((const std::string&)buffer);
+        
+        // std::string note = "**signal reader**";
+        // signal_card_reader.emit((const std::string&)note);
+
+        ssize_t bytesSent = send(clientSocket, req->response.c_str(), req->response.length(), 0);
+        // req->response.c_str();
+        // delete req;
+        // QUEUE THE JOBS
+        // SWITCH REQUEST TYPE
+        // SEND PROPER SIGNALS
+        
+        // signal_data_received.emit((const std::string&)buffer);
+        // std::cout << "Received " << bytesRead << " bytes from client: " << buffer << std::endl;
+        // ssize_t bytesSent = send(clientSocket, buffer, bytesRead, 0);
     }
 
     if (bytesRead == -1) 
@@ -40,7 +55,9 @@ void NetworkServer::keep_listening(){
         std::cout << "Connection closed to "<< inet_ntoa(clientAddress.sin_addr)<< std::endl;                
     }
 
-
+    
+    // set a policy for the bytes structure
+    // 
     
     // // Split received data into username and token
 
@@ -65,6 +82,10 @@ void NetworkServer::keep_listening(){
 
 
 }
+
+
+
+
 void NetworkServer::init_socket_server(){
   serverSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (serverSocket == -1) {
@@ -94,24 +115,122 @@ void NetworkServer::init_socket_server(){
 
 }
 
+
+
 void NetworkServer::stop(){
     
-    if (network_thread.joinable()) {
-        network_thread.join();
+    if (server_thread.joinable()) {
+        job_queue_condition.notify_one();  // Unblock the thread to allow it to exit
+        server_thread.join();  // Wait for the network thread to finish
     }
-    // close socket
-    // Close the sockets
-    close(clientSocket);
-    close(serverSocket);
-    // kill_process(pid);
+    server_thread_running = false;
+
+    if(clientSocket!=-1){
+        close(clientSocket);
+    }
+
+    if(serverSocket!=-1){
+        close(serverSocket);
+    }
+
+    kill_process(server_pid);
     
 }
 
+void NetworkServer::start(){
+   if (!server_thread.joinable()) {
+        if(serverSocket == -1){
+            init_socket_server();
+            server_thread_running = true;
+        }
+        server_thread = std::thread([this]() {
+            
+            while (server_thread_running) {
+                keep_listening();    
+                std::function<void(int)> job;
+                // Dequeue and execute jobs from the queue
+                {
+                    std::unique_lock<std::mutex> lock(job_queue_mutex);
+                    job_queue_condition.wait(lock, [this] { return !server_thread_running || !job_queue.empty(); });
+                    if (!server_thread_running) {
+                        break;  // Exit the thread if it's no longer running
+                    }
+                    if (!job_queue.empty()) {
+                        job = job_queue.front();
+                        job_queue.pop();
+                    }
+
+                }
+
+                if (job) {
+                    // Execute the job
+                    job(serverSocket);
+
+                }
+            }
+
+
+        });
+
+
+    }
+}
+void NetworkServer::run_bg(const std::function<void()> &func){
+    // Add a job to the network thread's job queue
+    std::unique_lock<std::mutex> lock(job_queue_mutex);
+//    std::lock_guard<std::mutex> lock(job_queue_mutex);
+    job_queue.push([this, func](int serverSocket) {
+      // add jobs here
+      func();
+      //signals
+      //this->signal_data_received.emit((const std::string&)buffer);
+    });
+    lock.unlock();
+    job_queue_condition.notify_one();
+
+
+}
+void run_echo(){
+    std::cout<<"Hello echo"<<std::endl;
+}
 NetworkServer::NetworkServer(/* args */)
 {
-    init_socket_server();
+    signal_data_received.connect(sigc::mem_fun(*this, &NetworkServer::on_data_received));
+
+    start();
+
+    // run_bg(run_echo);
+    // run_bg(dynamic_cast<const std::function<void>&>(keep_listening));
+}
+void NetworkServer::on_data_received(const std::string &data) {
+    //
+    std::cout << "Server Data received fired... "<< data.c_str() << std::endl;
+    // auto req = new RFIDRequest();
+    // req->process_req_data(data);
+    // delete req;
+    // authenticate(data); // go up the chain before firing TODO: 
+
 }
 
+void NetworkServer::authenticate(const std::string &data){
+
+    const char* buffer = data.c_str();
+    
+    char* username = strtok(const_cast<char*>(buffer), ":");
+    char* token = strtok(NULL, ":");
+
+    if (username != NULL && token != NULL) {
+            // std::cout << "Token " << token<< "username "<<username << std::endl;
+            std::cout << "Token "<<token << std::endl;
+        // Check if the token matches the one generated for the user
+        std::string storedToken = "supersecret"; // COMPARE IT TO THE ENCRYPTED DIGEST
+        if (storedToken == token) {
+            send(clientSocket, "Authentication successful\0", 26, 0);
+        } else {
+            send(clientSocket, "Authentication failed\0", 22, 0);
+        }
+    }
+}
 NetworkServer::~NetworkServer()
 {
     stop();
@@ -120,14 +239,28 @@ NetworkServer::~NetworkServer()
 // handle authentication
 
 
-// int main() {
-//     NetworkServer server;
+void NetworkServer::kill_process(pid_t processId){
+    const char* processName = "your_process_name_or_id_here";
 
-//     while (true)
-//     {
-//         server.keep_listening();
-//         /* code */
-//     }
-    
-//     return 0;
-// }
+    // Build the kill command based on the operating system
+    // For Unix-like systems (Linux, macOS)
+    // Build the kill command based on the operating system
+    #if defined(__unix__) || defined(__APPLE__) // For Unix-like systems (Linux, macOS)
+        std::string killCommand = "kill -9 " + std::to_string(processId);
+    #elif defined(_WIN32) // For Windows
+        std::string killCommand = "taskkill /F /PID " + std::to_string(processId);
+    #else
+        #error Unsupported operating system
+    #endif
+    // Append the process name or ID to the command
+    // killCommand += processName;
+
+    // Execute the kill command
+    int result = std::system(killCommand.c_str());
+
+    if (result == 0) {
+        std::cout << "Process " << processName << " killed successfully." << std::endl;
+    } else {
+        std::cerr << "Failed to kill process " << processName << "." << std::endl;
+    }
+}

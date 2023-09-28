@@ -23,6 +23,7 @@ protected:
     Gtk::Button m_btn;
     Gtk::Label message;
     Gtk::Label reader_status;
+    Gtk::Entry m_entry;
     Gtk::Image hero_image;
     Gtk::TextView m_text;
     Gtk::Stack m_stack;

@@ -5,6 +5,7 @@
 #ifndef INTERFACE_NETWORKCLIENT_H
 #define INTERFACE_NETWORKCLIENT_H
 #include <iostream>
+#include <functional>
 #include <string>
 #include <unistd.h>
 #include <cstring>
@@ -30,14 +31,14 @@ public:
     void test_socket();
     int clientSocket=-1;
     std::thread network_thread;
-    bool network_thread_running= false;
+    bool network_thread_running=false;
 //    void socket_send(const char* & buff);
     void socket_send(const std::string&);
 
 
 private:
     void set_label_text(const std::string& text);
-    struct sockaddr_in serverAddress{};
+    struct sockaddr_in serverAddress;
     int init_socket();
     void start_bg();
     void authorize_socket();

@@ -26,6 +26,7 @@ BaseWindow::BaseWindow():
     m_btn.set_halign(Gtk::Align::START);
     m_btn.signal_clicked().connect(sigc::mem_fun(*this,&BaseWindow::on_button_clicked));
     container.append(m_btn);
+    container.append(m_entry);
      //CSS style
 //    Glib::ustring data = ".hero {clip-path: circle(50px at 0 100px);width: 200px;height: 200px;object-fit:fill;}";
 //    auto provider = Gtk::CssProvider::create();
@@ -62,6 +63,7 @@ BaseWindow::BaseWindow():
     auto app = App::get_instance();
     app->network_client.signal_data_received.connect(sigc::mem_fun(*this, &BaseWindow::on_data_received));
 
+
 }
 
 // Interface::~Interface()= default;
@@ -73,7 +75,16 @@ void BaseWindow::on_button_clicked()
     reader_status.set_text("checking...");
 
     auto app = App::get_instance();
-    app->network_client.socket_send("Ping static");
+
+//    app->network_client.socket_send("risha:verysecure");
+
+    auto content = m_entry.get_text();
+    std::cout << "content "<< content << std::endl;
+    if(content.length()>0){
+        app->network_client.socket_send(content);
+
+    }
+
 
 
 }
