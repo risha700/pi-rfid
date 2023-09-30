@@ -18,7 +18,7 @@ App* App::instance = nullptr;
 App::App():
 Gtk::Application("rfid.opaic.assignment.sep.nz", Gio::Application::Flags::HANDLES_OPEN) {
     // set app env
-    logger->set_app_log_env(RFID_APP_ENV);
+//    logger->set_app_log_env((std::string &) environment);
     logger->info("App in {} mode",environment);
 
     // connect signals

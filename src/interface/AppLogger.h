@@ -28,32 +28,37 @@ public:
         set_level(spdlog::level::info);
         flush_on(spdlog::level::info);
 
-        set_pattern("[%Y-%m-%d %H:%M:%S.%e] [t_id %t p_id %P]  [%^%l%$] %v");
+//        set_pattern("[%Y-%m-%d %H:%M:%S.%e] [t_id %t p_id %P]  [%^%l%$] %v");
 
         auto combined_logger = std::make_shared<spdlog::logger>("multi", std::begin(sinks()), std::end(sinks()));
-        spdlog::set_default_logger(combined_logger);
+//        spdlog::set_default_logger(combined_logger);
+//        set_pattern("[%n][%Y-%m-%d] [%^%l%$] %v");
 
-//        spdlog::register_logger(combined_logger);
+        spdlog::register_logger(combined_logger);
 
     }
 
-    void set_app_log_env( std::string environment){
+    void set_app_log_env( std::string& environment){
         // Determine the log level based on the environment
         spdlog::level::level_enum logLevel;
         if (environment == "DEBUG") {
             logLevel = spdlog::level::debug;
+            set_pattern("[%^%l%$] [%n] [t_id %t p_id %P] %v");
+
         } else {
             logLevel = spdlog::level::info;
+            set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%n] [%^%l%$] %v");
         }
 
         // Initialize the logger with the determined log level
-        set_level(logLevel);
+        this->set_level(logLevel);
     }
 
     // Static method to get the logger instance
-    static std::shared_ptr<AppLogger> getLogger() {
+    static std::shared_ptr<AppLogger> getLogger(std::string environment) {
         static std::shared_ptr<AppLogger> logger = std::make_shared<AppLogger>
                 ("app_logger", "/tmp/rfid_app.log");
+        logger->set_app_log_env((std::string&)environment);
         return logger;
     }
 

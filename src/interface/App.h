@@ -39,7 +39,7 @@ public:
     LoginWindow login_window;
     NetworkClient network_client;
     const char* environment=RFID_APP_ENV;
-    std::shared_ptr<AppLogger> logger = AppLogger::getLogger();
+    std::shared_ptr<AppLogger> logger = AppLogger::getLogger(environment);
     void on_login_state_change();
     void on_data_received(const std::string& data);
     bool on_time_out();
