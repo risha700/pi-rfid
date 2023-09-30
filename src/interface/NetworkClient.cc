@@ -97,7 +97,8 @@ void NetworkClient::socket_send(const std::string &message){
              exit(1);
         } else {
             std::cout << "Sent: " << message << std::endl;
-
+            //TODO:register it as background job and fire events
+            // hold the thread to get an answer
             char buffer[2048]; // Buffer to hold received data
             ssize_t bytesRead = recv(clientSocket, buffer, sizeof(buffer), 0);
             if (bytesRead == -1) {

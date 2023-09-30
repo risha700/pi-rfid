@@ -1,0 +1,152 @@
+@startuml
+
+
+
+
+
+/' Objects '/
+
+class App {
+	#App()
+	+{static} get_instance() : App*
+	+{static} create() : Glib::RefPtr<App>
+	#m_refBuilder : Glib::RefPtr<Gtk::Builder>
+	+login_window : LoginWindow
+	+network_client : NetworkClient
+	-create_app_window() : auto*
+	-create_login_window() : auto*
+	+is_authenticated : bool
+	+on_time_out() : bool
+	#{static} instance : static App*
+	#on_activate() : void
+	+on_data_received(const std::string& data) : void
+	+on_login_state_change() : void
+	#on_open(const Gio::Application::type_vec_files& files, const Glib::ustring& hint) : void
+}
+
+
+class BaseWindow {
+	+BaseWindow()
+	#control_win : ControlsWindow
+	#m_refChoice : Glib::RefPtr<Gio::SimpleAction>
+	#container : Gtk::Box
+	#controls_btn : Gtk::Button
+	#m_btn : Gtk::Button
+	#m_entry : Gtk::Entry
+	#hero_image : Gtk::Image
+	#message : Gtk::Label
+	#reader_status : Gtk::Label
+	#m_stack : Gtk::Stack
+	#m_text : Gtk::TextView
+	#on_window_key_pressed(guint keyval, guint keycode, Gdk::ModifierType state) : bool
+	#on_action_quit() : void
+	#on_button_clicked() : void
+	#on_controls_show_click() : void
+	+on_data_received(const std::string& data) : void
+}
+
+
+class ControlsWindow {
+	+ControlsWindow()
+	+~ControlsWindow()
+	#m_data_model : Glib::RefPtr<Gio::ListStore<ModelColumns>>
+	#m_factory : Glib::RefPtr<Gtk::SignalListItemFactory>
+	#m_selection_model : Glib::RefPtr<Gtk::SingleSelection>
+	#m_ButtonBox : Gtk::Box
+	+m_VBox : Gtk::Box
+	#m_Button_Quit : Gtk::Button
+	#m_GridView : Gtk::GridView
+	#m_ScrolledWindow : Gtk::ScrolledWindow
+	#on_model_sort(const Glib::RefPtr<const ModelColumns>& a, const Glib::RefPtr<const ModelColumns>& b) : int
+	#add_entry(const std::string& filename, const Glib::ustring& description) : void
+	#on_bind_listitem(const Glib::RefPtr<Gtk::ListItem>& list_item) : void
+	#on_button_quit() : void
+	#on_item_activated(unsigned int position) : void
+	#on_selection_changed() : void
+	#on_setup_listitem(const Glib::RefPtr<Gtk::ListItem>& list_item) : void
+}
+
+
+class ControlsWindow::ModelColumns {
+	#ModelColumns(const std::string& filename, const Glib::ustring& description, const Glib::RefPtr<Gdk::Texture>& texture)
+	+m_texture : Glib::RefPtr<Gdk::Texture>
+	+{static} create(const std::string& filename, const Glib::ustring& description, const Glib::RefPtr<Gdk::Texture>& texture) : Glib::RefPtr<ModelColumns>
+	+m_description : Glib::ustring
+	+m_filename : std::string
+}
+
+
+class LoginWindow {
+	+LoginWindow()
+	#m_refChoice : Glib::RefPtr<Gio::SimpleAction>
+	#login_container : Gtk::Box
+	#submit_btn : Gtk::Button
+	#password_entry : Gtk::Entry
+	#username_entry : Gtk::Entry
+	#label_frame : Gtk::Frame
+	#password_frame : Gtk::Frame
+	#hero_image : Gtk::Image
+	#on_window_key_pressed(guint keyval, guint keycode, Gdk::ModifierType state) : bool
+	+signal_login_event : signal<void ( )>
+	#on_action_quit() : void
+	#on_button_clicked() : void
+	+open_file_view(const Glib::RefPtr<Gio::File>& file) : void
+}
+
+
+class NetworkClient {
+	+NetworkClient()
+	-function<void(int)
+	+~NetworkClient()
+	+network_thread_running : bool
+	+clientSocket : int
+	-init_socket() : int
+	+signal_data_received : signal<void ( const std::string& )>
+	-job_queue_condition : std::condition_variable
+	-job_queue_mutex : std::mutex
+	+network_thread : std::thread
+	-serverAddress : struct sockaddr_in
+	-authorize_socket() : void
+	-set_label_text(const std::string& text) : void
+	+socket_send(const std::string &) : void
+	+start() : void
+	-start_bg() : void
+	+stop() : void
+	+test_socket() : void
+}
+
+
+
+
+
+/' Inheritance relationships '/
+
+
+
+
+/' Aggregation relationships '/
+
+.App o-- .App
+
+
+.App *-- .LoginWindow
+
+
+.App *-- .NetworkClient
+
+
+.BaseWindow *-- .ControlsWindow
+
+
+
+
+
+
+/' Nested objects '/
+
+.ControlsWindow +-- .ControlsWindow::ModelColumns
+
+
+
+
+@enduml

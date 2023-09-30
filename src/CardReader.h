@@ -15,6 +15,9 @@
 #include "NetworkServer.h"
 #include "bcm2835.h"
 #include "MFRC522Extended.h"
+#include <iostream>
+#include <sstream>
+#include <iomanip>
 
 #define NR_KNOWN_KEYS   8
 
@@ -44,10 +47,12 @@ public:
     void read_block(byte block=8, bool dump_hex=false);
     void write_block(byte block);
     void dump_tag_info();
-    void on_signal_received(const std::string &data);
+    
+    void on_signal_received(const std::string &command, const std::string &data);
     // todo interface
     NetworkServer network_server;
-
+    // serialized
+    std::string get_tag_info();
    
 
 };

@@ -22,7 +22,7 @@
 #include <map>
 #include <sigc++.h>
 
-using ReaderSignal = sigc::signal<void(const std::string&)>;
+using ReaderSignal = sigc::signal<void(const std::string&, const std::string&)>;
 
 
 enum class RequestType
@@ -90,7 +90,7 @@ struct RFIDRequest {
         {"RFID_DUMP", RequestType::RFID_DUMP}
     };
 
-    std::string data;
+    std::string data="";
     std::string response="ERROR_GENERIC";
     
     ReaderSignal reader_signal;
@@ -119,9 +119,9 @@ struct RFIDRequest {
                     break;
                 case RequestType::RFID_AUTH:
                     // TODO: check auth and assign response
-                     command = "RFID_AUTH";
-                     reader_signal.emit((const std::string&)command);
                      response = "PROCESSING";
+                     command = "RFID_AUTH";
+                     reader_signal.emit((const std::string&)command, (const std::string&)data);
                     std::cout << "RFID_AUTH" << std::endl;
                     break;
                 case RequestType::RFID_READ:
@@ -130,9 +130,9 @@ struct RFIDRequest {
                     // scan and send back results form card reader
                      // const char* note = "**emitted**";
                      // signal.emit(const_cast<std::string&>(note));
-                     command = "RFID_READ";
-                     reader_signal.emit((const std::string&)command);
                      response = "PROCESSING";
+                     command = "RFID_READ";
+                     reader_signal.emit((const std::string&)command, (const std::string&)data);
                      std::cout << "RFID_READ"<< std::endl;
                     break;
                 case RequestType::RFID_WRITE:
@@ -140,12 +140,14 @@ struct RFIDRequest {
                         data = tokens[1];
                         // response=data; // todo send signal to reader
                     }
-                    command = "RFID_WRITE";
-                    reader_signal.emit((const std::string&)command);
                     response = "PROCESSING";
+                    command = "RFID_WRITE";
+                    reader_signal.emit((const std::string&)command, (const std::string&)data);
                     std::cout << "RFID_WRITE-"<<"DATA:\t"<<data.c_str()<< std::endl;
                     break; 
                 case RequestType::RFID_DUMP:
+                    command = "RFID_DUMP";
+                    reader_signal.emit((const std::string&)command, (const std::string&)data);
                     std::cout << "RFID_DUMP "<< std::endl;
                     break; 
                 default:

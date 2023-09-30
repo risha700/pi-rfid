@@ -8,14 +8,27 @@
 #include <gtkmm.h>
 #include "LoginWindow.h"
 #include "NetworkClient.h"
+#include "ControlsWindow.h"
+
+#ifndef AUTH_FS
+#define AUTH_FS "/tmp/rfid.sys"
+#endif
 
 
+#ifdef APP_ENV
+#define RFID_APP_ENV APP_ENV
+#else
+#define RFID_APP_ENV "PRODUCTION"
+#endif
+
+
+#include "AppLogger.h"
 
 class App: public Gtk::Application
 {
 protected:
     App();
-//    virtual ~App();
+    virtual ~App();
     
     Glib::RefPtr<Gtk::Builder> m_refBuilder;
 
@@ -25,7 +38,8 @@ public:
     bool is_authenticated=false;
     LoginWindow login_window;
     NetworkClient network_client;
-
+    const char* environment=RFID_APP_ENV;
+    std::shared_ptr<AppLogger> logger = AppLogger::getLogger();
     void on_login_state_change();
     void on_data_received(const std::string& data);
     bool on_time_out();

@@ -8,15 +8,19 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <cstdlib>
+
 #include "NetworkClient.h"
 
-#ifndef AUTH_FS
-#define AUTH_FS "/tmp/rfid.sys"
-#endif
+
 App* App::instance = nullptr;
 
 App::App():
 Gtk::Application("rfid.opaic.assignment.sep.nz", Gio::Application::Flags::HANDLES_OPEN) {
+    // set app env
+    logger->set_app_log_env(RFID_APP_ENV);
+    logger->info("App in {} mode",environment);
+
     // connect signals
     login_window.signal_login_event.connect(sigc::mem_fun(*this, &App::on_login_state_change));
     network_client.signal_data_received.connect(sigc::mem_fun(*this, &App::on_data_received));
@@ -35,10 +39,10 @@ App* App::get_instance() {
     return instance;
 }
 
-//App::~App(){}
+App::~App(){}
 void debug_thread(NetworkClient *network_client, int rounds=3){
     for (int i = 0; i < rounds; ++i) {
-        const char*  msg="yoo programming ";
+        const char*  msg="Thread test";
         int length = std::snprintf(nullptr, 0, "%s%d", msg, i);
         char* combinedString = new char[length + 1];
         std::snprintf(combinedString, length + 1, "%s%d", msg, i);
@@ -49,6 +53,7 @@ void debug_thread(NetworkClient *network_client, int rounds=3){
 bool App::on_time_out() {
 //    debug_thread(&network_client);
 //    network_client.socket_send("Hi");
+//    std::cout<< (std::string )environment <<std::endl;
     return false;
 }
 
@@ -60,7 +65,7 @@ Glib::RefPtr<App> App::create()
 
 void App::on_data_received(const std::string &data) {
     // update UI
-    std::cout << "Data received fired... "<< data.c_str() << std::endl;
+    std::cout << "App.cc => Data received fired... "<< data.c_str() << std::endl;
 
 
 

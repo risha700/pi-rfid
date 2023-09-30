@@ -77,15 +77,41 @@ CardReader::~CardReader(){
 
 }
 
-void CardReader::on_signal_received(const std::string &command){
-   std::cout<<"on signal received fired"<< command.c_str()<<std::endl;
+void CardReader::on_signal_received(const std::string &command, const std::string &data){
+   std::cout<<" on_signal_received_fired command "<< command.c_str()<<"\t data "<<data.c_str()<<std::endl;
    // now in network thread processing
+  std::string answer;
+  while (!answer.length()) 
+  {
+      while(PICC_IsNewCardPresent()&& answer.empty())
+      {
+        MFRC522Extended::PICC_Type piccType = PICC_GetType(this->uid.sak);
+        // auto *device_name = PICC_GetTypeName(piccType).c_str();
+        answer = PICC_GetTypeName(piccType).c_str();
+        // memccpy(answer,device_name,sizeof(device_name) , 0);
+        
+      }
 
-   MFRC522Extended::PICC_Type piccType = PICC_GetType(this->uid.sak);
-   auto answer = PICC_GetTypeName(piccType).c_str();
+      this->PICC_HaltA();
+      this->PCD_StopCrypto1();
 
-   network_server.signal_data_received.emit((const std::string&)answer);
-   
+  }
+  
+
+  // PICC_HaltA();
+  // PCD_StopCrypto1();
+    network_server.signal_data_received.emit((const std::string&)answer);
+ 
+  // if(this->PICC_IsNewCardPresent() && this->PICC_ReadCardSerial()){
+    
+  //   auto answer = get_tag_info();
+  //   network_server.signal_data_received.emit((const std::string&)answer);
+    
+  // }else{
+      // PICC_HaltA();
+      // PCD_StopCrypto1();
+  // }
+
 
 }
 /*
@@ -223,15 +249,47 @@ void CardReader::dump_tag_info(){
       printf("Card Detected %s:", PICC_GetTypeName(piccType).c_str());
     
       for(byte i = 0; i < this->uid.size; ++i){
-      if(this->uid.uidByte[i] < 0x10){
-	    printf(" 0");
-	    printf("%X",this->uid.uidByte[i]);
-      }
-      else{
-	    printf(" ");
-	    printf("%X", this->uid.uidByte[i]);
-      }
+        if(this->uid.uidByte[i] < 0x10){
+        printf(" 0");
+        printf("%X",this->uid.uidByte[i]);
+        }
+        else{
+        printf(" ");
+        printf("%X", this->uid.uidByte[i]);
+        }
     }
   printf("\n");
+
+}
+
+/*
+  return card type and UID
+*/
+
+std::string CardReader::get_tag_info(){
+      MFRC522Extended::PICC_Type piccType = PICC_GetType(this->uid.sak);
+      printf("Serializing info... %s:", PICC_GetTypeName(piccType).c_str());
+      
+      // std::ostringstream formattedString;
+      // for (size_t i = 0; i < uid.size; ++i) {
+      //     if (uid.uidByte[i] < 0x10) {
+      //         formattedString << " 0" << std::hex << std::setw(2) << static_cast<int>(uid.uidByte[i]);
+      //     } else {
+      //         formattedString << " " << std::hex << std::setw(2) << static_cast<int>(uid.uidByte[i]);
+      //     }
+      // }
+      char formattedString[2048]; // Adjust the buffer size as needed
+
+      // Initialize the formattedString buffer
+      formattedString[0] = '\0';
+
+      for (size_t i = 0; i < uid.size; ++i) {
+        sprintf(formattedString + strlen(formattedString), " %02X", static_cast<int>(uid.uidByte[i]));
+      }
+
+      // std::string result = formattedString.str();
+      std::string result = (std::string)(formattedString);
+      std::string response = PICC_GetTypeName(piccType).c_str()+ result;
+      return response;
 
 }

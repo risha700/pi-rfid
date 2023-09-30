@@ -31,7 +31,7 @@ void NetworkServer::keep_listening(){
             auto req = new RFIDRequest();
             req->reader_signal = signal_card_reader; // pass the signal
             req->process_req_data((const std::string&)buffer);
-
+            // must send any response back
             ssize_t bytesSent = send(clientSocket, req->response.c_str(), req->response.length(), 0);
 
             // delete req;
