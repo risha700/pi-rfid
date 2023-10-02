@@ -13,7 +13,10 @@
 #include "NetworkClient.h"
 
 
+// Declare a global pointer to your custom application instance
 App* App::instance = nullptr;
+//AppLogger* App::my_logger = nullptr;
+
 
 App::App():
 Gtk::Application("rfid.opaic.assignment.sep.nz", Gio::Application::Flags::HANDLES_OPEN) {
@@ -25,11 +28,12 @@ Gtk::Application("rfid.opaic.assignment.sep.nz", Gio::Application::Flags::HANDLE
     login_window.signal_login_event.connect(sigc::mem_fun(*this, &App::on_login_state_change));
     network_client.signal_data_received.connect(sigc::mem_fun(*this, &App::on_data_received));
 
-//    Glib::RefPtr<Gtk::Settings> settings = Gtk::Settings::get_default();
+    // Prefer dark theme
+    auto settings = Gtk::Settings::get_default();
+    settings->property_gtk_application_prefer_dark_theme().set_value(true);
 
     // test network
     Glib::signal_timeout().connect( sigc::mem_fun(*this, &App::on_time_out),10 );
-
     instance = this; // set the static instance
 
 }
@@ -63,12 +67,9 @@ Glib::RefPtr<App> App::create()
 
 }
 
-void App::on_data_received(const std::string &data) {
+void App::on_data_received(const std::string &data) const {
     // update UI
-    std::cout << "App.cc => Data received fired... "<< data.c_str() << std::endl;
-
-
-
+    logger->debug("App.cc => Data received fired... {}", data.c_str());
 }
 
 auto* App::create_login_window()
@@ -97,21 +98,12 @@ auto* App::create_app_window()
     return appwindow;
 }
 void App::on_login_state_change(){
-    std::cout << "Login changed..."<< std::endl;
-    
+    logger->debug("Login changed...");
     auto windows = get_windows();
     windows[0]->destroy();
-//    dynamic_cast<LoginWindow*>(windows[0])
-//    this->remove_window();
     //  dynamic_cast<LoginWindow*>(windows[0]);
-    
     auto appwindow = create_app_window();
     appwindow->present();
-     
-
-    // is_authenticated = true;
-//    set_auth((bool)is_auth);
-
 }
 
 void App::on_activate()
@@ -124,8 +116,6 @@ void App::on_activate()
         is_authenticated = true;
     }
     app_file.close();
-
-
     // check if authenticated
     if(is_authenticated){
         // show interface menu

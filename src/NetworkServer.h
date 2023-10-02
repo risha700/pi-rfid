@@ -23,6 +23,7 @@
 #include <sigc++.h>
 
 using ReaderSignal = sigc::signal<void(const std::string&, const std::string&)>;
+using NetSignal = sigc::signal<void(const std::string&)>;
 
 
 enum class RequestType
@@ -51,7 +52,6 @@ private:
    struct sockaddr_in serverAddress;
    struct sockaddr_in clientAddress;
    std::thread server_thread;
-   using NetSignal = sigc::signal<void(const std::string&)>;
    bool server_thread_running=false;
    void stop();
    void start();
@@ -73,7 +73,6 @@ public:
     NetSignal signal_data_received;
     ReaderSignal signal_card_reader;
 
-
 };
 
 
@@ -94,6 +93,7 @@ struct RFIDRequest {
     std::string response="ERROR_GENERIC";
     
     ReaderSignal reader_signal;
+    NetSignal network_signal_data_received;
     std::string command = "**signal reader**";
 
     std::function<void()> fn;
@@ -115,6 +115,7 @@ struct RFIDRequest {
                 {
                 case RequestType::RFID_PING:
                     response = "RFID_PONG";
+                    network_signal_data_received.emit((const std::string&)response);
                     std::cout << "GOT RFID_PING"<< std::endl;
                     break;
                 case RequestType::RFID_AUTH:
@@ -152,6 +153,7 @@ struct RFIDRequest {
                     break; 
                 default:
                     response = "ERROR: Unknown Request";
+                    network_signal_data_received.emit((const std::string&)response);
                     std::cout << "Error: Unknown request type "<< (int)type << std::endl;
                     break;
                 }
@@ -162,6 +164,7 @@ struct RFIDRequest {
 
         }else{
             response = "ERROR: Unknown Request";
+            network_signal_data_received.emit((const std::string&)response.c_str());
             // reject request
             // throw exception
         }

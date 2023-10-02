@@ -21,29 +21,19 @@ void NetworkServer::keep_listening(){
         
 
         // start receiving
-        char buffer[2048]; // Buffer to hold received data
+        char buffer[1024]; // Buffer to hold received data
         ssize_t bytesRead=-1;
+
 
         // Read data from the client **blocking
         while ((bytesRead = recv(clientSocket, buffer, sizeof(buffer),0)) > 0) {
             // Process the received data (you can modify this part
-            // buffer[bytesRead] = '\0'; // Null-terminate the received data
+            buffer[bytesRead] = '\0'; // Null-terminate the received data
             auto req = new RFIDRequest();
             req->reader_signal = signal_card_reader; // pass the signal
+            req->network_signal_data_received = signal_data_received; // pass the signal
             req->process_req_data((const std::string&)buffer);
-            // must send any response back
-            ssize_t bytesSent = send(clientSocket, req->response.c_str(), req->response.length(), 0);
-
-            // delete req;
-            // req->response.c_str();
-            // delete req;
-            // QUEUE THE JOBS
-            // SWITCH REQUEST TYPE
-            // SEND PROPER SIGNALS
             
-            // signal_data_received.emit((const std::string&)buffer);
-            // std::cout << "Received " << bytesRead << " bytes from client: " << buffer << std::endl;
-            // ssize_t bytesSent = send(clientSocket, buffer, bytesRead, 0);
         }
 
         if (bytesRead == -1) 
@@ -53,13 +43,13 @@ void NetworkServer::keep_listening(){
             std::cout << "Connection closed to "<< inet_ntoa(clientAddress.sin_addr)<< std::endl;  
 
         }
-        if (bytesRead == 0)
+        else if (bytesRead == 0)
         {
             close(clientSocket);
             std::cout << "Connection closed to "<< inet_ntoa(clientAddress.sin_addr)<< std::endl;
         }
 
-
+        
     }
 
 
@@ -72,6 +62,12 @@ void NetworkServer::init_socket_server(){
   serverSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (serverSocket == -1) {
         std::cerr << "Error creating socket: " << strerror(errno) << std::endl;
+        exit(1);
+    }
+        // Set the SO_REUSEADDR option
+    int reuse = 1;
+    if (setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0) {
+        perror("setsockopt(SO_REUSEADDR) failed");
         exit(1);
     }
     serverAddress.sin_family = AF_INET;

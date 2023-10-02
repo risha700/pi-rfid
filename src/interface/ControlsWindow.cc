@@ -1,4 +1,6 @@
 #include "ControlsWindow.h"
+#include "App.h"
+#include "BaseWindow.h"
 #include <array>
 #include <iostream>
 
@@ -11,32 +13,33 @@ namespace
         Glib::ustring m_description;
     };
 
-    std::array<GridEntry, 5> entries =
+    std::array<GridEntry, 4> entries =
             {
+                GridEntry{"assets/read.svg", "RFID_PING"},
                 GridEntry{"assets/scan.svg", "RFID_READ"},
                 GridEntry{"assets/present_tag.png", "RFID_DUMP"},
-                GridEntry{"assets/write.svg", "RFID_WRITE"},
-                GridEntry{"assets/stop_rfid.png", "RFID_READ"},
-                GridEntry{"assets/read.svg", "RFID_PING"}
+                GridEntry{"assets/write.svg", "RFID_WRITE"}
             };
 
 } // anonymous namespace
 
-
+// not a window instance just a name
 ControlsWindow::ControlsWindow()
-:m_VBox(Gtk::Orientation::VERTICAL), m_Button_Quit("Quit")
+:m_VBox(Gtk::Orientation::VERTICAL), m_Button_Quit("Dismiss")
 {
 
 //    set_title("Grid example");
 //    set_default_size(600, 500);
     m_VBox.set_margin(5);
+
 //    set_child(m_VBox);
     // Add the GridView inside a ScrolledWindow, with the button underneath:
     m_ScrolledWindow.set_child(m_GridView);
 
     // Only show the scrollbars when they are necessary:
     m_ScrolledWindow.set_policy(Gtk::PolicyType::AUTOMATIC, Gtk::PolicyType::AUTOMATIC);
-    m_ScrolledWindow.set_expand();
+    m_ScrolledWindow.set_expand(false);
+    m_ScrolledWindow.set_min_content_height(100);
 
     m_VBox.append(m_ScrolledWindow);
     m_VBox.append(m_ButtonBox);
@@ -62,7 +65,7 @@ ControlsWindow::ControlsWindow()
     // Fill the Gio::ListStore's data model and sort it.
     for (const auto& entry : entries)
         add_entry(entry.m_filename, entry.m_description);
-    m_data_model->sort(sigc::mem_fun(*this, &ControlsWindow::on_model_sort));
+//    m_data_model->sort(sigc::mem_fun(*this, &ControlsWindow::on_model_sort));
 
     m_GridView.set_model(m_selection_model);
     m_GridView.set_factory(m_factory);
@@ -71,7 +74,6 @@ ControlsWindow::ControlsWindow()
             sigc::mem_fun(*this, &ControlsWindow::on_item_activated));
     m_selection_model->property_selected().signal_changed().connect(
             sigc::mem_fun(*this, &ControlsWindow::on_selection_changed));
-
 
 
 }
@@ -123,11 +125,20 @@ void ControlsWindow::on_item_activated(unsigned int position)
     const std::string filename = col->m_filename;
     const Glib::ustring description = col->m_description;
 
-    //TODO: assign functions here
-    std::cout  << "Item activated: filename=" << filename
-               << ", description=" << description << std::endl;
+    auto app = App::get_instance();
+    app->logger->debug("Item activated: filename={}, description={}", filename.c_str(), description.c_str());
+    // if the action is RFID_WRITE
+    if(strcmp(description.c_str(), "RFID_WRITE") == 0){
+        app->logger->debug("looking for input to write");
+        modal_signal.emit("present");
+    }else{
+        app->network_client.socket_send(description.c_str());
+    }
 }
+
+
 ControlsWindow::~ControlsWindow() {};
+
 void ControlsWindow::on_selection_changed()
 {
     auto position = m_selection_model->get_selected();
@@ -138,8 +149,8 @@ void ControlsWindow::on_selection_changed()
     const std::string filename = col->m_filename;
     const Glib::ustring description = col->m_description;
 
-    std::cout  << "Selection Changed to: filename=" << filename
-               << ", description=" << description << std::endl;
+//    std::cout  << "Selection Changed to: filename=" << filename
+//               << ", description=" << description << std::endl;
 }
 
 int ControlsWindow::on_model_sort(const Glib::RefPtr<const ModelColumns>& a,

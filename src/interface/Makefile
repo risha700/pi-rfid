@@ -8,8 +8,8 @@ CFLAGS +=$(shell $(PKGCONFIG) spdlog --cflags --libs)
 SRC_DIR = .
 SRC_FILES = $(wildcard $(SRC_DIR)/**.cc)
 INCLUDE_DIRS = $(SRC_DIR)
-
-APP_ENV =-DAPP_ENV=\"DEBUG\"
+# env must go together DEBUG debug | RELEASE info
+APP_ENV =-DAPP_ENV=\"DEBUG\" -DSPDLOG_LEVEL=\"debug\" -DRFID_SERVER_ADDR=\"192.168.1.201\" -DRFID_SERVER_PORT=8080
 
 TARGET = app
 

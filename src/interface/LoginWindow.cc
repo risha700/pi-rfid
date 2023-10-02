@@ -40,6 +40,7 @@ LoginWindow::LoginWindow():
     login_container.append(password_entry);
     submit_btn.set_label("Submit");
     login_container.append(submit_btn);
+    login_container.append(login_status);
     submit_btn.signal_clicked().connect(sigc::mem_fun(*this,&LoginWindow::on_button_clicked));
     
     
@@ -95,6 +96,8 @@ void LoginWindow::on_button_clicked()
 
 
      }
+
+     login_status.set_text("Login Invalid, check with administrator. 99");
 
 }
 

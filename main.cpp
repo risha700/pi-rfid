@@ -18,7 +18,7 @@ int main() {
   // network_server.signal_card_reader.connect(sigc::mem_fun(rfid, &CardReader::on_signal_received));
   
   
-  ConsoleMenu menu(&rfid);
+  // ConsoleMenu menu(&rfid);
   
   return 0;
 }

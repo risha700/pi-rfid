@@ -1,10 +1,13 @@
 #include "NetworkClient.h"
+#include "AppLogger.h"
 
+
+//auto logger = spdlog::default_logger();
 
 NetworkClient::NetworkClient() {
     // Initialize socket, connect to server, set up callbacks, etc.
     if (!network_thread_running) {
-        start_bg();
+        start();
     }
 
 }
@@ -15,16 +18,64 @@ NetworkClient::~NetworkClient(){
 
 
 }
+void NetworkClient::recv_bg_listener(){
+    char buffer[2048]; // Buffer to hold received data
+    ssize_t bytesRead = recv(clientSocket, buffer, sizeof(buffer), 0);
+    if (bytesRead == -1) {
+        logger->error("Error receiving data:  {}",strerror(errno));
+
+    } else {
+        buffer[bytesRead] = '\0'; // Null-terminate the received data
+        logger->debug("Received:  {}",buffer);
+        this->signal_data_received.emit((const std::string&)buffer);
+
+    }
+}
+
+void NetworkClient::run_bg(const std::function<void()> &func){
+    // Add a job to the network thread's job queue
+    std::unique_lock<std::mutex> lock(job_queue_mutex);
+//    std::lock_guard<std::mutex> lock(job_queue_mutex);
+    job_queue.push([func](int clientSocket) {
+        // add jobs here
+        func();
+        //signals
+        //this->signal_data_received.emit((const std::string&)buffer);
+    });
+    lock.unlock();
+    job_queue_condition.notify_one();
+
+
+}
+
 
 int NetworkClient::init_socket() {
 
+
     // TODO: set it from env
-    const char* iot_server_ip = "192.168.1.201";
-    int iot_server_port = 8080;
+    const char* iot_server_ip = RFID_SERVER_ADDR;
+    int iot_server_port = RFID_SERVER_PORT;
 
     clientSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (clientSocket == -1) {
-        std::cerr << "Error creating socket: " << strerror(errno) << std::endl;
+        logger->error("Error creating socket:  {}",strerror(errno));
+        return -1;
+    }
+
+    // Set timeout for receiving
+    struct timeval timeout;
+    timeout.tv_sec = 10;  // 10 seconds
+    timeout.tv_usec = 0;
+    if (setsockopt(clientSocket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) == -1) {
+        logger->error("Error setting receiving timeout:  {}",strerror(errno));
+        close(clientSocket);
+        return -1;
+    }
+
+    // Set timeout for sending
+    if (setsockopt(clientSocket, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)) == -1) {
+        logger->error("Error setting send timeout:  {}",strerror(errno));
+        close(clientSocket);
         return -1;
     }
 
@@ -34,11 +85,11 @@ int NetworkClient::init_socket() {
 
 
     if (connect(clientSocket, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) == -1) {
-        std::cerr << "Error connecting to server: " << strerror(errno) << std::endl;
+        logger->error("Error connecting to server:  {}",strerror(errno));
         close(clientSocket);
         return -1;
     }
-    std::cout << "Connected to the server." << std::endl;
+    logger->info("Connected to the server {}:{}", iot_server_ip, iot_server_port);
 
     return 0;
 }
@@ -54,105 +105,47 @@ void NetworkClient::authorize_socket() {
     char buffer[2048]; // Buffer to hold received data
     ssize_t bytesRead = recv(clientSocket, buffer, sizeof(buffer), 0);
     if (bytesRead == -1) {
-        std::cerr << "Error receiving data: " << strerror(errno) << std::endl;
+        logger->error("Error receiving data:  {}",strerror(errno));
     } else {
         buffer[bytesRead] = '\0'; // Null-terminate the received data
-        std::cout << "Received: " << buffer << std::endl;
+        logger->debug("Received:  {}",buffer);
+
         signal_data_received.emit((const std::string&)buffer);
     }
 }
-void NetworkClient::test_socket(){
-    const char* message = "Hello, Server!";
-    ssize_t bytesSent = send(clientSocket, message, strlen(message), 0);
-    if (bytesSent == -1) {
-        std::cerr << "Error sending data: " << strerror(errno) << std::endl;
-    } else {
-        std::cout << "Sent: " << message << std::endl;
 
-        char buffer[2048]; // Buffer to hold received data
-        ssize_t bytesRead = recv(clientSocket, buffer, sizeof(buffer), 0);
-        if (bytesRead == -1) {
-            std::cerr << "Error receiving data: " << strerror(errno) << std::endl;
-        } else {
-            buffer[bytesRead] = '\0'; // Null-terminate the received data
-            std::cout << "Received: " << buffer << std::endl;
-            signal_data_received.emit((const std::string&)buffer);
-
-        }
-    }
-
+bool NetworkClient::test_socket(){
+//    if(clientSocket == -1){
+        close(clientSocket);
+        auto test_server = init_socket();
+        return test_server == 0;
+//    }
+//    return true;
 }
 
 void NetworkClient::socket_send(const std::string &message){
     // Add a job to the network thread's job queue
     std::unique_lock<std::mutex> lock(job_queue_mutex);
-//    std::lock_guard<std::mutex> lock(job_queue_mutex);
     job_queue.push([this, message](int clientSocket) {
-
-//        const char* message = msg;
         ssize_t bytesSent = send(clientSocket, message.c_str(),  message.length(), 0);
         if (bytesSent == -1) {
-            std::cerr << "Error sending data: " << strerror(errno) << std::endl;
-        }else if(bytesSent==0){
+            logger->error("Error sending data:  {}", strerror(errno));
+        }else if(bytesSent==0){ // socket closed actually
              exit(1);
         } else {
-            std::cout << "Sent: " << message << std::endl;
-            //TODO:register it as background job and fire events
-            // hold the thread to get an answer
-            char buffer[2048]; // Buffer to hold received data
-            ssize_t bytesRead = recv(clientSocket, buffer, sizeof(buffer), 0);
-            if (bytesRead == -1) {
-                std::cerr << "Error receiving data: " << strerror(errno) << std::endl;
-            } else {
-                buffer[bytesRead] = '\0'; // Null-terminate the received data
-                std::cout << "Received: " << buffer << std::endl;
-                this->signal_data_received.emit((const std::string&)buffer);
-
-            }
+            logger->debug("Sent:  {}", message);
+            recv_bg_listener();
         }
     });
+
     lock.unlock();
     job_queue_condition.notify_one();
 
 
 }
+
+
 void NetworkClient::start() {
-    // Start the network thread
-    if (!network_thread_running) {
-        // Handle network operations here
-        network_thread = std::thread([this]() {
-          try
-          {
-
-            if(clientSocket == -1){
-                init_socket();
-//                socket_send("Hi");
-//            const char*  msg="Hello programming very long message to see how many bytes will be!";
-//            const char*  msg2="Yet another message 2";
-//            const char*  msg3="yoo programming!!";
-//            socket_send( msg);
-//            std::this_thread::sleep_for(std::chrono::seconds(2));
-//            socket_send( msg2);
-//            std::this_thread::sleep_for(std::chrono::seconds(10));
-//            socket_send( msg3);
-//                socket_send("Hey C++!");
-//                socket_send("yet a different message");
-                network_thread_running=true;
-            }
-
-          }
-          catch(const std::exception& e)
-          {
-            std::cerr << e.what() << '\n';
-            exit(1);
-          }
-          
-        });
-
-    }
-}
-
-void NetworkClient::start_bg() {
     if (!network_thread.joinable()) {
         if(clientSocket == -1){
             init_socket();
@@ -202,3 +195,4 @@ void NetworkClient::stop() {
     }
 
 }
+

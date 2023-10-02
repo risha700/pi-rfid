@@ -7,6 +7,7 @@
 
 #include <gdkmm.h>
 #include <gtkmm.h>
+#include "InputDialog.h"
 
 
 class ControlsWindow
@@ -15,6 +16,8 @@ public:
     ControlsWindow();
     ~ControlsWindow();
     Gtk::Box m_VBox;
+    using WinSignal = sigc::signal<void(const std::string&)>;
+    WinSignal modal_signal;
 
 protected:
     class ModelColumns;
@@ -26,6 +29,7 @@ protected:
     void on_bind_listitem(const Glib::RefPtr<Gtk::ListItem>& list_item);
     int on_model_sort(const Glib::RefPtr<const ModelColumns>& a, const Glib::RefPtr<const ModelColumns>& b);
     void add_entry(const std::string& filename, const Glib::ustring& description);
+
 
 // A Gio::ListStore stores filename, description and texture.
     class ModelColumns : public Glib::Object
@@ -59,6 +63,7 @@ protected:
     Gtk::GridView m_GridView;
     Gtk::Box m_ButtonBox;
     Gtk::Button m_Button_Quit;
+
 
 
 };

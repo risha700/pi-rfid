@@ -25,13 +25,10 @@ protected:
     Glib::RefPtr<Gio::SimpleAction> m_refChoice;
     Gtk::Box login_container;
     Gtk::Image hero_image;
-    Gtk::Label username_label {"Username"};
-    Gtk::Entry username_entry;
-    Gtk::Label password_label {"Password"};
-    Gtk::Entry password_entry;
+    Gtk::Label username_label {"Username"}, password_label {"Password"}, login_status;
+    Gtk::Entry username_entry,password_entry;
     Gtk::Button submit_btn;
-    Gtk::Frame label_frame;
-    Gtk::Frame password_frame;
+    Gtk::Frame password_frame,label_frame;
 };
 
 

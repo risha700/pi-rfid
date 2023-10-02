@@ -83,7 +83,7 @@ void CardReader::on_signal_received(const std::string &command, const std::strin
   std::string answer;
   while (!answer.length()) 
   {
-      while(PICC_IsNewCardPresent()&& answer.empty())
+      while(PICC_IsNewCardPresent() && PICC_ReadCardSerial() && answer.empty())
       {
         MFRC522Extended::PICC_Type piccType = PICC_GetType(this->uid.sak);
         // auto *device_name = PICC_GetTypeName(piccType).c_str();
@@ -91,9 +91,8 @@ void CardReader::on_signal_received(const std::string &command, const std::strin
         // memccpy(answer,device_name,sizeof(device_name) , 0);
         
       }
-
-      this->PICC_HaltA();
-      this->PCD_StopCrypto1();
+      PICC_HaltA(); // Halt the PICC before stopping the encrypted session.
+      PCD_StopCrypto1();
 
   }
   
@@ -101,7 +100,7 @@ void CardReader::on_signal_received(const std::string &command, const std::strin
   // PICC_HaltA();
   // PCD_StopCrypto1();
     network_server.signal_data_received.emit((const std::string&)answer);
- 
+    // answer = "";
   // if(this->PICC_IsNewCardPresent() && this->PICC_ReadCardSerial()){
     
   //   auto answer = get_tag_info();

@@ -22,6 +22,7 @@
 #endif
 
 
+
 #include "AppLogger.h"
 
 class App: public Gtk::Application
@@ -39,9 +40,9 @@ public:
     LoginWindow login_window;
     NetworkClient network_client;
     const char* environment=RFID_APP_ENV;
-    std::shared_ptr<AppLogger> logger = AppLogger::getLogger(environment);
+    std::shared_ptr<AppLogger> logger = AppLogger::getLogger();
     void on_login_state_change();
-    void on_data_received(const std::string& data);
+    void on_data_received(const std::string& data) const;
     bool on_time_out();
 
     static App* get_instance();
@@ -59,8 +60,5 @@ private:
 
 };
 //NetworkClient* App::network_client = nullptr;
-
-//NetworkClient* App::network_client = nullptr;
-// Declare a global pointer to your custom application instance
 
 #endif //INTERFACE_APP_H
