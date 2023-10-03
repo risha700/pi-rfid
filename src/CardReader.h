@@ -11,13 +11,13 @@
  */
 #ifndef CARDREADER_H
 #define CARDREADER_H
-
-#include "NetworkServer.h"
+#include "NetworkServer.h" //must be first as it collides with bcm math implementation.
 #include "bcm2835.h"
 #include "MFRC522Extended.h"
 #include <iostream>
 #include <sstream>
 #include <iomanip>
+
 
 #define NR_KNOWN_KEYS   8
 

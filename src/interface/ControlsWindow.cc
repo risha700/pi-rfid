@@ -15,10 +15,10 @@ namespace
 
     std::array<GridEntry, 4> entries =
             {
-                GridEntry{"assets/read.svg", "RFID_PING"},
-                GridEntry{"assets/scan.svg", "RFID_READ"},
-                GridEntry{"assets/present_tag.png", "RFID_DUMP"},
-                GridEntry{"assets/write.svg", "RFID_WRITE"}
+                GridEntry{"/assets/read.svg", "RFID_PING"},
+                GridEntry{"/assets/scan.svg", "RFID_READ"},
+                GridEntry{"/assets/present_tag.png", "RFID_DUMP"},
+                GridEntry{"/assets/write.svg", "RFID_WRITE"}
             };
 
 } // anonymous namespace
@@ -165,7 +165,8 @@ void ControlsWindow::add_entry(const std::string& filename,
 {
     try
     {
-        auto pixbuf = Gdk::Pixbuf::create_from_file(filename);
+//        auto pixbuf = Gdk::Pixbuf::create_from_file(filename);
+        auto pixbuf = Gdk::Pixbuf::create_from_resource(filename);
         auto texture = Gdk::Texture::create_for_pixbuf(pixbuf);
         m_data_model->append(ModelColumns::create(filename, description, texture));
     }

@@ -1,8 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
-    <gresource prefix="/app">
-        <file>sec.jpg</file>
-        <file>tap_nfc.png</file>
-        <file>rfid.png</file>
+    <gresource prefix="/assets">
+        <file>antenna.svg</file>
+        <file>antenna_active.svg</file>
+        <file>rfid.svg</file>
+        <file>read.svg</file>
+        <file>write.svg</file>
+        <file>present_tag.png</file>
+        <file>scan.svg</file>
+        <file>nfc.svg</file>
     </gresource>
 </gresources>

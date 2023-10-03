@@ -21,13 +21,13 @@ BaseWindow::BaseWindow():
     container.set_valign(Gtk::Align::BASELINE_FILL);
 
     hero_image.set_size_request(40,40);
-    hero_image.set("assets/nfc.svg");
+    hero_image.set_from_resource("/assets/nfc.svg");
     hero_image.set_halign(Gtk::Align::START);
 
     container.append(hero_image);
 
     // status box
-    status_img.set("assets/antenna.svg");
+    status_img.set_from_resource("/assets/antenna.svg");
     status_img.set_size_request(50,50);
     status_img.set_halign(Gtk::Align::CENTER);
 
@@ -133,13 +133,13 @@ void BaseWindow::on_check_network_click()
     connection_status.set_text("checking connection...");
 
     if(app->network_client.test_socket()){
-        status_img.set("assets/antenna_active.svg");
+        status_img.set_from_resource("/assets/antenna_active.svg");
         connection_status.set_text("Connected");
         connection_status.remove_css_class("connection_status_down");
         connection_status.add_css_class("connection_status_up");
 
     }else{
-        status_img.set("assets/antenna.svg");
+        status_img.set_from_resource("/assets/antenna.svg");
         connection_status.set_text(" Error: check your connection!");
         connection_status.remove_css_class("connection_status_up");
         connection_status.add_css_class("connection_status_down");
