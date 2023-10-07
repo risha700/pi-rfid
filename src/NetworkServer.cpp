@@ -55,9 +55,6 @@ void NetworkServer::keep_listening(){
 
 }
 
-
-
-
 void NetworkServer::init_socket_server(){
   serverSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (serverSocket == -1) {
