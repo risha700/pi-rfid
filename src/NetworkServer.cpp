@@ -70,6 +70,7 @@ void NetworkServer::init_socket_server(){
         perror("setsockopt(SO_REUSEADDR) failed");
         exit(1);
     }
+
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_addr.s_addr = INADDR_ANY;
     serverAddress.sin_port = htons(SERVER_PORT);

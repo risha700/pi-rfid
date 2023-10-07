@@ -104,7 +104,26 @@ std::string CardReader::handle_signal(const std::string& key, const std::string 
                         answer = write_block_serialized(blocks[i], data_placeholder);
                     }
             }},
-            {"RFID_DUMP", [](){}}
+            {"RFID_DUMP", [this, &answer](){
+                // workaround to avoid rewriting the logic, just serialize the buffer
+                int original_stdout_fd = dup(STDOUT_FILENO);
+                std::stringstream output_stream;
+                // Redirect stdout to the stringstream
+                int pipe_fd[2];
+                pipe(pipe_fd);
+                dup2(pipe_fd[1], STDOUT_FILENO);
+                close(pipe_fd[1]);
+
+                this->PICC_DumpToSerial(&this->tag);
+                // Restore the original stdout stream buffer
+                dup2(original_stdout_fd, STDOUT_FILENO);
+                char buffer[5500];
+                ssize_t size;
+                while ((size = read(pipe_fd[0], buffer, sizeof(buffer))) > 0) {
+                    output_stream.write(buffer, size);
+                }
+                answer = output_stream.str();
+            }}
     };
 
     auto it = signal_handler.find(key);

@@ -56,8 +56,6 @@ public:
     NetworkServer network_server;
     // serialized
     std::string get_tag_info();
-
-    std::string get_dump_info();
     std::map<std::string, std::function<void()>> signal_handler;
     std::string handle_signal(const std::string& key, const std::string &data);
    
