@@ -13,6 +13,8 @@ BaseWindow::BaseWindow():
     Gtk::ApplicationWindow(),
     container(Gtk::Orientation::VERTICAL, 10)
 {
+
+
     // main area
     set_title("RFID Admin");
     set_size_request(600, 600);
@@ -95,6 +97,7 @@ BaseWindow::BaseWindow():
     modal.set_hide_on_close();
     modal.buttons_clicked_connect(
             sigc::mem_fun(*this, &BaseWindow::on_dialog_response));
+
 
 }
 void BaseWindow::on_modal_show(const std::string &data){

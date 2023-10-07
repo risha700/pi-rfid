@@ -65,8 +65,83 @@ CardReader::CardReader(RPiGPIOPin SS_PIN, RPiGPIOPin RST_PIN):MFRC522Extended::M
   printf("Connected\n");
   PCD_DumpVersionToSerial();
   network_server.signal_card_reader.connect(sigc::mem_fun(*this, &CardReader::on_signal_received));
+
+
+
+
+}
+/**
+ * Handle signals from the network.
+ * and emits another signal with the string answer
+ */
+
+std::string CardReader::handle_signal(const std::string& key, const std::string &data) {
+    std::string answer;
+    byte blocks[] = {8,9,10}; // writable block MFRC522 datasheet
+    signal_handler = {
+            {"RFID_AUTH", [this, &answer](){
+                MFRC522Extended::PICC_Type piccType = PICC_GetType(this->uid.sak);
+                answer = get_tag_info();
+            }},
+            {"RFID_READ", [this, &answer, blocks](){
+                answer ="";
+                for (byte i = 0; i < sizeof(blocks); ++i)
+                    answer += read_block_serialized(blocks[i]);
+            }},
+            {"RFID_WRITE", [this, &answer, &data, blocks](){
+                for (byte i = 0; i < sizeof(blocks); ++i)
+                    try
+                    {
+                        answer = write_block_serialized(blocks[i],
+                                                        data.substr(i*16, (i*16)+16));
+                    }
+                    catch(const std::exception& e)
+                    {
+                        // pad spaces
+                        char data_placeholder[16];
+                        memset(data_placeholder, ' ', 16);
+                        data_placeholder[16-1] = '\0';
+                        answer = write_block_serialized(blocks[i], data_placeholder);
+                    }
+            }},
+            {"RFID_DUMP", [](){}}
+    };
+
+    auto it = signal_handler.find(key);
+    if (it != signal_handler.end()) {
+        it->second();
+    }
+
+    if(answer.length()>0){
+        network_server.signal_data_received.emit((const std::string&)answer);
+    }
+
+    return answer; // just to break the loop
 }
 
+/**
+ * Writes to bloc and return serialized value
+ * TODO: handle buffer overflow, support ISO/IEC 14443 tags
+ * Handled in frontend for now
+ * .
+ */
+std::string CardReader::write_block_serialized(byte block, const std::string &data) {
+    read_block_serialized(block);
+    MFRC522Extended::StatusCode status;
+    byte buffer[16];
+    byte bufferLen = sizeof(buffer);
+    byte data_len =  data.length();
+    for (size_t i = 0; i <data_len; i++)
+    {
+        buffer[i] = byte(data[i]);
+    }
+    for (byte i =  data_len; i < bufferLen; i++) buffer[i] = ' ';  // pad spaces
+    status = MIFARE_Write(block, buffer, 16);
+    if (status != MFRC522Extended::STATUS_OK) {
+        return GetStatusCodeName(status);
+    }
+    return "Written Successfully";
+}
 /**
  * Destructor.
  */
@@ -81,40 +156,15 @@ void CardReader::on_signal_received(const std::string &command, const std::strin
    std::cout<<" on_signal_received_fired command "<< command.c_str()<<"\t data "<<data.c_str()<<std::endl;
    // now in network thread processing
   std::string answer;
-  while (!answer.length()) 
-  {
+  while (!answer.length())
       while(PICC_IsNewCardPresent() && PICC_ReadCardSerial() && answer.empty())
-      {
-        MFRC522Extended::PICC_Type piccType = PICC_GetType(this->uid.sak);
-        // auto *device_name = PICC_GetTypeName(piccType).c_str();
-        answer = PICC_GetTypeName(piccType).c_str();
-        // memccpy(answer,device_name,sizeof(device_name) , 0);
-        
-      }
-      PICC_HaltA(); // Halt the PICC before stopping the encrypted session.
-      PCD_StopCrypto1();
-
-  }
-  
-
-  // PICC_HaltA();
-  // PCD_StopCrypto1();
-    network_server.signal_data_received.emit((const std::string&)answer);
-    // answer = "";
-  // if(this->PICC_IsNewCardPresent() && this->PICC_ReadCardSerial()){
-    
-  //   auto answer = get_tag_info();
-  //   network_server.signal_data_received.emit((const std::string&)answer);
-    
-  // }else{
-      // PICC_HaltA();
-      // PCD_StopCrypto1();
-  // }
-
+          answer = (std::string) handle_signal(command, data);
+          PICC_HaltA();
+          PCD_StopCrypto1();
 
 }
 /*
-* try authenticate against given key and byte block
+* authenticates against known keys and byte block
 */
 
 bool CardReader::try_key(MFRC522Extended::MIFARE_Key *key, byte block, bool dump_hex)
@@ -172,44 +222,63 @@ MFRC522Extended::MIFARE_Key CardReader::generate_key(byte block, bool dump_hex){
   return default_key;
 
 }
+/*
+  Reads MIFARE type 1kb or 4kb serialized
+*/
+std::string CardReader::read_block_serialized(byte block=8){
+    MFRC522Extended::MIFARE_Key default_key =  generate_key(block, false);
+    byte len;
+    MFRC522Extended::StatusCode status;
+    byte buffer[18];
+    len = sizeof(buffer);
+
+    status = PCD_Authenticate(MFRC522Extended::PICC_CMD_MF_AUTH_KEY_A, block, &default_key, &(this->uid)); //line 834 of MFRC522.cpp file
+    if (status != MFRC522Extended::STATUS_OK) {
+        return GetStatusCodeName(status);
+    }
+    status = MIFARE_Read(block, buffer, &len);
+    if (status != MFRC522Extended::STATUS_OK) {
+        return GetStatusCodeName(status);
+    }
+
+    char formattedString[18]; // 16 data and 2 for auth
+
+    // Initialize the formattedString buffer
+    formattedString[0] = '\0';
+    for (size_t i = 0; i < len-2; ++i) {
+        sprintf(formattedString + strlen(formattedString), "%c", buffer[i]);
+    }
+    return formattedString;
+
+}
+
 
 /*
   Reads MIFARE type 1kb or 4kb
 */
 void CardReader::read_block(byte block, bool dump_hex){
-  // MFRC522::MIFARE_Key default_key = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
   MFRC522Extended::MIFARE_Key default_key =  generate_key(block, dump_hex);
-
-  // byte block;
   byte len;
   MFRC522Extended::StatusCode status;
-
-
   byte buffer[18];
-
-  // block = 8;
   len = 18;
   status = PCD_Authenticate(MFRC522Extended::PICC_CMD_MF_AUTH_KEY_A, block, &default_key, &(this->uid)); //line 834 of MFRC522.cpp file
   if (status != MFRC522Extended::STATUS_OK) {
     printf("Authentication failed: %s\n", GetStatusCodeName(status).c_str());
     return;
   }
-  
 
   status = MIFARE_Read(block, buffer, &len);
   if (status != MFRC522Extended::STATUS_OK) {
     printf("Read failed: %s\n", GetStatusCodeName(status).c_str());
     return;
   }
-  
+
   printf("\n block => %d ASCII TEXT :", block);
   for (uint8_t i = 0; i < 16; i++)
   {
       printf("%c", buffer[i]); // ascii char
-      // printf(" %hhX ", buffer[i]); // ascii char
-
   }
-  
 }
 
 /*
@@ -262,21 +331,11 @@ void CardReader::dump_tag_info(){
 }
 
 /*
-  return card type and UID
+  return card type and UID serialized
 */
 
 std::string CardReader::get_tag_info(){
       MFRC522Extended::PICC_Type piccType = PICC_GetType(this->uid.sak);
-      printf("Serializing info... %s:", PICC_GetTypeName(piccType).c_str());
-      
-      // std::ostringstream formattedString;
-      // for (size_t i = 0; i < uid.size; ++i) {
-      //     if (uid.uidByte[i] < 0x10) {
-      //         formattedString << " 0" << std::hex << std::setw(2) << static_cast<int>(uid.uidByte[i]);
-      //     } else {
-      //         formattedString << " " << std::hex << std::setw(2) << static_cast<int>(uid.uidByte[i]);
-      //     }
-      // }
       char formattedString[2048]; // Adjust the buffer size as needed
 
       // Initialize the formattedString buffer

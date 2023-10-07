@@ -5,10 +5,10 @@ app_env = ['-DAPP_ENV="DEBUG"', '-DSPDLOG_LEVEL="debug"', '-DRFID_SERVER_ADDR="1
 
 epoxy = dependency('epoxy')
 
-default_library = 'static'
-
 gnome = import('gnome')
 src_dir = meson.current_source_dir()
+
+schemas = gnome.compile_schemas(depend_files: 'rfid.opaic.assignment.sep.nz.gschema.xml')
 
 if epoxy.found()
   app_resources = gnome.compile_resources('app-resources',
@@ -30,19 +30,17 @@ c_files = [
 executable('app',
            c_files,
            app_resources,
+           schemas,
            dependencies : [
               dependency('gtkmm-4.0'),
               dependency('spdlog'),
               dependency('epoxy')
               ],
            install : true,
-           cpp_args: app_env,
+           cpp_args: app_env
             # implicit_include_directories: false,
             # win_subsystem: 'windows',
             # build_by_default: build_demos,
-            # link_args: gui_app_ldflags,
-            install: false,
-
-
+            # link_args: gui_app_ldflags
            )
 endif

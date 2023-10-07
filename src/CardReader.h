@@ -17,6 +17,8 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
+#include <functional>
+#include <map>
 
 
 #define NR_KNOWN_KEYS   8
@@ -47,12 +49,17 @@ public:
     void read_block(byte block=8, bool dump_hex=false);
     void write_block(byte block);
     void dump_tag_info();
-    
+    std::string read_block_serialized(byte block);
+    std::string write_block_serialized(byte block, const std::string &data);
     void on_signal_received(const std::string &command, const std::string &data);
     // todo interface
     NetworkServer network_server;
     // serialized
     std::string get_tag_info();
+
+    std::string get_dump_info();
+    std::map<std::string, std::function<void()>> signal_handler;
+    std::string handle_signal(const std::string& key, const std::string &data);
    
 
 };

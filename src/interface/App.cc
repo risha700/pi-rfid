@@ -19,9 +19,12 @@ App* App::instance = nullptr;
 
 
 App::App():
-Gtk::Application("rfid.opaic.assignment.sep.nz", Gio::Application::Flags::HANDLES_OPEN) {
+Gtk::Application("rfid.interface.opaic.nz", Gio::Application::Flags::HANDLES_OPEN)
+{
+
+    Glib::set_application_name("RFID Admin");
     // set app env
-//    logger->set_app_log_env((std::string &) environment);
+ ;
     logger->info("App in {} mode",environment);
 
     // connect signals
@@ -92,6 +95,10 @@ auto* App::create_login_window()
 auto* App::create_app_window()
 {
     auto appwindow = new BaseWindow();
+
+//    appwindow->set_default_icon_name("dialog-information");
+//    appwindow->set_icon_name("dialog-information");
+
     add_window(*appwindow);
     appwindow->signal_hide().connect([appwindow](){ delete appwindow; });
     
@@ -116,10 +123,12 @@ void App::on_activate()
         is_authenticated = true;
     }
     app_file.close();
+
     // check if authenticated
     if(is_authenticated){
         // show interface menu
         auto appwindow = create_app_window();
+
         appwindow->present();
 
     }else{
