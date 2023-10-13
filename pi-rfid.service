@@ -1,0 +1,19 @@
+[Unit]
+Description=PI-RFID Reader
+After=network.target
+
+[Service]
+ExecStart=/home/pi/pi-rfid/rfid_admin
+Restart=on-failure
+Type=simple
+User=root
+StandardOutput=file:/var/log/pi-rfid.log
+StandardError=file:/var/log/pi-rfid-error.log
+LimitNOFILE=8192
+TimeoutStartSec=30s
+TimeoutStopSec=30s
+WatchdogSec=30s
+
+[Install]
+WantedBy=multi-user.target
+Alias=pi-rfid.service

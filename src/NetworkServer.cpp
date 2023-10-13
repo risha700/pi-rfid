@@ -1,4 +1,7 @@
 #include "NetworkServer.h"
+#include <systemd/sd-daemon.h>
+#include <chrono>
+#include <utility>
 
 #ifndef SERVER_PORT
 #define SERVER_PORT 8080
@@ -7,18 +10,16 @@
 void NetworkServer::keep_listening(){
 
     while (true)
-    {   
-        // init_socket_server();
+    {
         // accept connection
         socklen_t clientAddressLength = sizeof(clientAddress);
         clientSocket = accept(serverSocket, (struct sockaddr*)&clientAddress, &clientAddressLength);
         if (clientSocket == -1) {
-            std::cerr << "Error accepting connection: " << strerror(errno) << std::endl;
+            console_logger->error("Error accepting connection: {}",  strerror(errno));
             close(serverSocket);
             exit(1);
         }
-        std::cout << "Accepted a connection from " << inet_ntoa(clientAddress.sin_addr) << std::endl;
-        
+        console_logger->info("Accepted a connection from: {}",  inet_ntoa(clientAddress.sin_addr) );
 
         // start receiving
         char buffer[1024]; // Buffer to hold received data
@@ -27,7 +28,7 @@ void NetworkServer::keep_listening(){
 
         // Read data from the client **blocking
         while ((bytesRead = recv(clientSocket, buffer, sizeof(buffer),0)) > 0) {
-            // Process the received data (you can modify this part
+            // Process the received data you can modify this part
             buffer[bytesRead] = '\0'; // Null-terminate the received data
             auto req = new RFIDRequest();
             req->reader_signal = signal_card_reader; // pass the signal
@@ -38,18 +39,19 @@ void NetworkServer::keep_listening(){
 
         if (bytesRead == -1) 
         {
-            std::cerr << "Error receiving data: " << strerror(errno) << std::endl;
+            console_logger->error("Error receiving data: {}",  strerror(errno) );
+
             close(clientSocket);
-            std::cout << "Connection closed to "<< inet_ntoa(clientAddress.sin_addr)<< std::endl;  
+            console_logger->info("Connection closed to: {}",  inet_ntoa(clientAddress.sin_addr) );
+
 
         }
         else if (bytesRead == 0)
         {
             close(clientSocket);
-            std::cout << "Connection closed to "<< inet_ntoa(clientAddress.sin_addr)<< std::endl;
+            console_logger->info("Connection closed to: {}",  inet_ntoa(clientAddress.sin_addr) );
         }
 
-        
     }
 
 
@@ -58,43 +60,55 @@ void NetworkServer::keep_listening(){
 void NetworkServer::init_socket_server(){
   serverSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (serverSocket == -1) {
-        std::cerr << "Error creating socket: " << strerror(errno) << std::endl;
+//        std::cerr << "Error creating socket: " << strerror(errno) << std::endl;
+        console_logger->error("Error creating socket: {}",  strerror(errno));
         exit(1);
     }
         // Set the SO_REUSEADDR option
     int reuse = 1;
     if (setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0) {
-        perror("setsockopt(SO_REUSEADDR) failed");
+//        perror("setsockopt(SO_REUSEADDR) failed");
+        console_logger->error("setsockopt(SO_REUSEADDR) failed: {}",  strerror(errno));
         exit(1);
     }
 
+//    // Set the server socket options
+//    struct timeval timeout;
+//    timeout.tv_sec = 10; // Set the timeout to 10 seconds
+//    timeout.tv_usec = 0; // No microseconds
+//
+//    if (setsockopt(serverSocket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0) {
+//        console_logger->error("setsockopt(SO_RCVTIMEO) failed: {}",  strerror(errno));
+//        close(serverSocket);
+//        exit(1);
+//    }
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_addr.s_addr = INADDR_ANY;
     serverAddress.sin_port = htons(SERVER_PORT);
 
     if (bind(serverSocket, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) == -1) {
-        std::cerr << "Error binding socket: " << strerror(errno) << std::endl;
+        console_logger->error("Error binding socket: {}",  strerror(errno));
+
         close(serverSocket);
         exit(1);
     }
 
     if (listen(serverSocket, 5) == -1) {
-        std::cerr << "Error listening on socket: " << strerror(errno) << std::endl;
+        console_logger->error("Error listening on socket: {}",  strerror(errno));
         close(serverSocket);
         exit(1);
     }
 
     server_pid = getpid();
 
-    printf("pid: %d\t", server_pid);
-    std::cout << "Server is listening on port 8080..." << std::endl;
+    console_logger->info("SERVER_PID {} - Server is listening on port {}...", server_pid, SERVER_PORT);
 
 }
 
 
 
 void NetworkServer::stop(){
-    
+
     if (server_thread.joinable()) {
         job_queue_condition.notify_one();  // Unblock the thread to allow it to exit
         server_thread.join();  // Wait for the network thread to finish
@@ -122,7 +136,8 @@ void NetworkServer::start(){
         server_thread = std::thread([this]() {
             
             while (server_thread_running) {
-                keep_listening();    
+//                keep_listening();
+
                 std::function<void(int)> job;
                 // Dequeue and execute jobs from the queue
                 {
@@ -134,12 +149,13 @@ void NetworkServer::start(){
                     if (!job_queue.empty()) {
                         job = job_queue.front();
                         job_queue.pop();
+                        console_logger->debug("dequeue job");
                     }
 
                 }
 
                 if (job) {
-                    // Execute the job
+                    console_logger->debug("executing new job");
                     job(serverSocket);
 
                 }
@@ -151,41 +167,62 @@ void NetworkServer::start(){
 
     }
 }
+
+
 void NetworkServer::run_bg(const std::function<void()> &func){
     // Add a job to the network thread's job queue
     std::unique_lock<std::mutex> lock(job_queue_mutex);
-//    std::lock_guard<std::mutex> lock(job_queue_mutex);
-    job_queue.push([this, func](int serverSocket) {
-      // add jobs here
-      func();
-      //signals
-      //this->signal_data_received.emit((const std::string&)buffer);
+
+    job_queue.push([this, func](int clientSocket) {
+        func();
     });
     lock.unlock();
     job_queue_condition.notify_one();
 
 
 }
-void run_echo(){
-    std::cout<<"Hello echo"<<std::endl;
+const void NetworkServer::heartbeat(){
+
+    std::this_thread::sleep_for(std::chrono::seconds(10));
+    sd_notify(0, ("THREADPID=" + std::to_string(getpid())).c_str());
+    sd_notify(0, "WATCHDOG=1");
+    console_logger->debug("❣ heartbeat ");
+
+//    sd_notify(0, "STATUS=NOT_READY");
 }
+
 NetworkServer::NetworkServer(/* args */)
 {
+    console_logger =  spdlog::default_logger();
+
     signal_data_received.connect(sigc::mem_fun(*this, &NetworkServer::on_data_received));
 
+    // start thread
     start();
 
-    // run_bg(&run_echo);
-    // run_bg(dynamic_cast<const std::function<void>&>(keep_listening));
+    // Notify systemd with PID
+    sd_notify(0, ("SERVICEMAINPID=" + server_pid));
+
+    // start server
+    run_bg([this]() { this->keep_listening(); });
+
+    sd_notify(0, "READY=1");
+
+    // start heartbeat separate thread
+    auto hearbeat_thread =  std::thread([this]() {
+        while (server_thread_running)
+            this->heartbeat();
+    });
+
+    hearbeat_thread.detach();
+
+
+
 }
 void NetworkServer::on_data_received(const std::string &data) {
-    //
-    std::cout << "Server Data received fired... "<< data.c_str() << std::endl;
-    // auto req = new RFIDRequest();
-    // req->process_req_data(data);
-    // delete req;
-    // authenticate(data); // go up the chain before firing TODO: 
-    ssize_t bytesSent = send(clientSocket, data.c_str(), data.length(), 0);
+   console_logger->debug("Server Data Received... {}", data.length());
+    send(clientSocket, data.c_str(), data.length(), 0);
+    // authenticate(data); // go up the chain before firing TODO:
 }
 
 void NetworkServer::authenticate(const std::string &data){
@@ -210,9 +247,8 @@ void NetworkServer::authenticate(const std::string &data){
 NetworkServer::~NetworkServer()
 {
     stop();
+    sd_notify(0, "WATCHDOG=trigger"); // force reload
 }
-// decide on routes
-// handle authentication
 
 
 void NetworkServer::kill_process(pid_t processId){
@@ -229,7 +265,7 @@ void NetworkServer::kill_process(pid_t processId){
         #error Unsupported operating system
     #endif
     // Append the process name or ID to the command
-    // killCommand += processName;
+     killCommand += processName;
 
     // Execute the kill command
     int result = std::system(killCommand.c_str());

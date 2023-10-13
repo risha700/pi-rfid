@@ -21,6 +21,8 @@
 #include <vector>
 #include <map>
 #include <sigc++.h>
+#include <spdlog/spdlog.h>
+
 
 using ReaderSignal = sigc::signal<void(const std::string&, const std::string&)>;
 using NetSignal = sigc::signal<void(const std::string&)>;
@@ -52,7 +54,6 @@ private:
    struct sockaddr_in serverAddress;
    struct sockaddr_in clientAddress;
    std::thread server_thread;
-   bool server_thread_running=false;
    void stop();
    void start();
    void init_socket_server();
@@ -60,8 +61,10 @@ private:
    void kill_process(pid_t processId);
    void on_data_received(const std::string &data);
    pid_t server_pid;
-   void run_bg(const std::function<void()> &func);
 
+   const void heartbeat();
+    // Initialize the logger with a console sink
+   std::shared_ptr<spdlog::logger> console_logger;
    std::queue<std::function<void(int)>> job_queue;
    std::mutex job_queue_mutex;
    std::condition_variable job_queue_condition;
@@ -70,8 +73,13 @@ public:
     NetworkServer();
     ~NetworkServer();
     void keep_listening();
+    bool server_thread_running=false;
     NetSignal signal_data_received;
     ReaderSignal signal_card_reader;
+
+//    template <typename FuncType, typename... Args>
+//    void run_bg(const FuncType &&func, Args&&... args);
+    void run_bg(const std::function<void()> &func);
 
 };
 
@@ -116,14 +124,14 @@ struct RFIDRequest {
                 case RequestType::RFID_PING:
                     response = "RFID_PONG";
                     network_signal_data_received.emit((const std::string&)response);
-                    std::cout << "GOT RFID_PING"<< std::endl;
+//                    std::cout << "GOT RFID_PING"<< std::endl;
                     break;
                 case RequestType::RFID_AUTH:
                     // TODO: check auth and assign response
                      response = "PROCESSING";
                      command = "RFID_AUTH";
                      reader_signal.emit((const std::string&)command, (const std::string&)data);
-                    std::cout << "RFID_AUTH" << std::endl;
+//                    std::cout << "RFID_AUTH" << std::endl;
                     break;
                 case RequestType::RFID_READ:
                     // check if auth
@@ -134,7 +142,7 @@ struct RFIDRequest {
                      response = "PROCESSING";
                      command = "RFID_READ";
                      reader_signal.emit((const std::string&)command, (const std::string&)data);
-                     std::cout << "RFID_READ"<< std::endl;
+//                     std::cout << "RFID_READ"<< std::endl;
                     break;
                 case RequestType::RFID_WRITE:
                     if(tokens.size() >=2){
@@ -144,17 +152,17 @@ struct RFIDRequest {
                     response = "PROCESSING";
                     command = "RFID_WRITE";
                     reader_signal.emit((const std::string&)command, (const std::string&)data);
-                    std::cout << "RFID_WRITE-"<<"DATA:\t"<<data.c_str()<< std::endl;
+//                    std::cout << "RFID_WRITE-"<<"DATA:\t"<<data.c_str()<< std::endl;
                     break; 
                 case RequestType::RFID_DUMP:
                     command = "RFID_DUMP";
                     reader_signal.emit((const std::string&)command, (const std::string&)data);
-                    std::cout << "RFID_DUMP "<< std::endl;
+//                    std::cout << "RFID_DUMP "<< std::endl;
                     break; 
                 default:
                     response = "ERROR: Unknown Request";
                     network_signal_data_received.emit((const std::string&)response);
-                    std::cout << "Error: Unknown request type "<< (int)type << std::endl;
+//                    std::cout << "Error: Unknown request type "<< (int)type << std::endl;
                     break;
                 }
                 

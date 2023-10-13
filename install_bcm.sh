@@ -12,3 +12,7 @@ make
 sudo make check
 
 sudo make install
+
+# deps
+sudo apt-get install libsystemd-dev -y -qq
+sudo apt-get install libspdlog-dev -y -qq

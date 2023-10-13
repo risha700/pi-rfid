@@ -19,6 +19,7 @@
 #include <iomanip>
 #include <functional>
 #include <map>
+#include <spdlog/spdlog.h>
 
 
 #define NR_KNOWN_KEYS   8
@@ -39,7 +40,8 @@ private:
         {0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff}, // AA BB CC DD EE FF
         {0x00, 0x00, 0x00, 0x00, 0x00, 0x00}  // 00 00 00 00 00 00
     };
-    
+    std::shared_ptr<spdlog::logger> console_logger =  spdlog::default_logger();
+
 public:
     // CardReader();
     CardReader(RPiGPIOPin SS_PIN, RPiGPIOPin RST_PIN);

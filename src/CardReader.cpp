@@ -14,7 +14,9 @@
 #else
 #include <unistd.h>
 #endif
-
+#include <cstdio>
+#include <cstring>
+#include <fcntl.h>
 void delay(int ms){
 #ifdef WIN32
   Sleep(ms);
@@ -31,7 +33,6 @@ void delay(int ms){
 #include <stdlib.h>
 #include <sstream>
 #include <cstdlib> // For getenv
-
 #include <cstring>
 #include <unistd.h>
 #include <sys/types.h>
@@ -47,6 +48,7 @@ void delay(int ms){
 
 #define RST_PIN  RPI_V2_GPIO_P1_22 // RST pin
 #define SS_PIN RPI_V2_GPIO_P1_24 // SDA pin
+#include <systemd/sd-daemon.h>
 
 /**
  * Constructor.
@@ -105,24 +107,43 @@ std::string CardReader::handle_signal(const std::string& key, const std::string 
                     }
             }},
             {"RFID_DUMP", [this, &answer](){
-                // workaround to avoid rewriting the logic, just serialize the buffer
-                int original_stdout_fd = dup(STDOUT_FILENO);
-                std::stringstream output_stream;
-                // Redirect stdout to the stringstream
-                int pipe_fd[2];
-                pipe(pipe_fd);
-                dup2(pipe_fd[1], STDOUT_FILENO);
-                close(pipe_fd[1]);
+              // workaround to avoid rewriting the logic, just serialize the buffer
+              // Create a temporary file to capture the output
+              const char* tempFileName = "/tmp/proctemp";
+              FILE* tempFile = fopen(tempFileName, "w");
+              std::string result;
 
-                this->PICC_DumpToSerial(&this->tag);
-                // Restore the original stdout stream buffer
-                dup2(original_stdout_fd, STDOUT_FILENO);
-                char buffer[5500];
-                ssize_t size;
-                while ((size = read(pipe_fd[0], buffer, sizeof(buffer))) > 0) {
-                    output_stream.write(buffer, size);
-                }
-                answer = output_stream.str();
+              if (tempFile == nullptr) {
+                  console_logger->error("Failed to open the temporary file");
+                  exit(1);
+              }
+
+              // Execute your function and redirect its output to the temporary file
+              fflush(stdout); // Ensure any pending output is flushed
+              int original_stdout_fd = dup(fileno(stdout));
+              dup2(fileno(tempFile), fileno(stdout));
+
+              this->PICC_DumpToSerial(&this->tag);
+
+              // Restore the original stdout stream buffer
+              fflush(stdout);
+              dup2(original_stdout_fd, fileno(stdout));
+
+              // Close the temporary file and wrap it in a shared_ptr
+              fclose(tempFile);
+              std::shared_ptr<FILE> pipe(fopen(tempFileName, "r"), pclose);
+
+              // Read and process the captured data from the temporary file
+              if (pipe) {
+                  char buffer[128];
+                  while (fgets(buffer, sizeof(buffer), pipe.get()) != nullptr) {
+                       result += buffer;
+                  }
+              }
+
+              // Clean up the temporary file
+              remove(tempFileName);
+              answer = result.c_str();
             }}
     };
 
@@ -132,7 +153,10 @@ std::string CardReader::handle_signal(const std::string& key, const std::string 
     }
 
     if(answer.length()>0){
+        console_logger->debug("Emitting answer... {}", answer.length());
         network_server.signal_data_received.emit((const std::string&)answer);
+    }else{
+      answer = "Error processing command";
     }
 
     return answer; // just to break the loop
@@ -172,14 +196,21 @@ CardReader::~CardReader(){
 }
 
 void CardReader::on_signal_received(const std::string &command, const std::string &data){
-   std::cout<<" on_signal_received_fired command "<< command.c_str()<<"\t data "<<data.c_str()<<std::endl;
+//   std::cout<<" on_signal_received_fired command "<< command.c_str()<<"\t data "<<data.c_str()<<std::endl;
    // now in network thread processing
   std::string answer;
-  while (!answer.length())
-      while(PICC_IsNewCardPresent() && PICC_ReadCardSerial() && answer.empty())
+  while (answer.empty()){
+      while(PICC_IsNewCardPresent() && PICC_ReadCardSerial())
           answer = (std::string) handle_signal(command, data);
           PICC_HaltA();
           PCD_StopCrypto1();
+          // handle edge case of deadlock || simulate force card removal
+          if(strcmp(command.c_str(), "RFID_DUMP")==0){
+              PCD_Init(SS_PIN, RST_PIN); // hard reset
+              console_logger->debug("Hard reset signal sent");
+          }
+  }
+  
 
 }
 /*
