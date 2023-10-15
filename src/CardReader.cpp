@@ -72,6 +72,45 @@ CardReader::CardReader(RPiGPIOPin SS_PIN, RPiGPIOPin RST_PIN):MFRC522Extended::M
 
 
 }
+
+std::string capture_console_output(std::function<void()> func) {
+    // Create a temporary file to capture the output
+    const char* tempFileName = "/tmp/proctemp";
+    FILE* tempFile = fopen(tempFileName, "w");
+    std::string result;
+
+    if (tempFile == nullptr) {
+//        console_logger->error("Failed to open the temporary file");
+        exit(1);
+    }
+
+    // Execute your function and redirect its output to the temporary file
+    fflush(stdout); // Ensure any pending output is flushed
+    int original_stdout_fd = dup(fileno(stdout));
+    dup2(fileno(tempFile), fileno(stdout));
+
+    func();
+
+    // Restore the original stdout stream buffer
+    fflush(stdout);
+    dup2(original_stdout_fd, fileno(stdout));
+
+    // Close the temporary file and wrap it in a shared_ptr
+    fclose(tempFile);
+    std::shared_ptr<FILE> pipe(fopen(tempFileName, "r"), pclose);
+
+    // Read and process the captured data from the temporary file
+    if (pipe) {
+        char buffer[128];
+        while (fgets(buffer, sizeof(buffer), pipe.get()) != nullptr) {
+            result += buffer;
+        }
+    }
+
+    // Clean up the temporary file
+    remove(tempFileName);
+    return result.c_str();
+}
 /**
  * Handle signals from the network.
  * and emits another signal with the string answer
@@ -108,42 +147,12 @@ std::string CardReader::handle_signal(const std::string& key, const std::string 
             }},
             {"RFID_DUMP", [this, &answer](){
               // workaround to avoid rewriting the logic, just serialize the buffer
-              // Create a temporary file to capture the output
-              const char* tempFileName = "/tmp/proctemp";
-              FILE* tempFile = fopen(tempFileName, "w");
-              std::string result;
+//              auto result = capture_console_output(&this->PICC_DumpToSerial(&this->tag));
+                auto result = capture_console_output([&] {
+                    this->PICC_DumpToSerial(&this->tag);
+                });
 
-              if (tempFile == nullptr) {
-                  console_logger->error("Failed to open the temporary file");
-                  exit(1);
-              }
-
-              // Execute your function and redirect its output to the temporary file
-              fflush(stdout); // Ensure any pending output is flushed
-              int original_stdout_fd = dup(fileno(stdout));
-              dup2(fileno(tempFile), fileno(stdout));
-
-              this->PICC_DumpToSerial(&this->tag);
-
-              // Restore the original stdout stream buffer
-              fflush(stdout);
-              dup2(original_stdout_fd, fileno(stdout));
-
-              // Close the temporary file and wrap it in a shared_ptr
-              fclose(tempFile);
-              std::shared_ptr<FILE> pipe(fopen(tempFileName, "r"), pclose);
-
-              // Read and process the captured data from the temporary file
-              if (pipe) {
-                  char buffer[128];
-                  while (fgets(buffer, sizeof(buffer), pipe.get()) != nullptr) {
-                       result += buffer;
-                  }
-              }
-
-              // Clean up the temporary file
-              remove(tempFileName);
-              answer = result.c_str();
+                answer = result;
             }}
     };
 
