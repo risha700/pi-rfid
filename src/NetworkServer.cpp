@@ -1,3 +1,14 @@
+/**
+ * 
+ * Owner: Ahmed A. <ahbox@outlook.com>
+ * Description: CardReader is a wrapper around MFRC522 class supports rasperry-pi GPIO through bcm2835 library
+ * 
+ * Project: Otago - OPAIC Platform and devices submission 09-2023
+ * Source Code: git@github.com:risha700/pi-rfid.git
+ * License: MIT 
+ * 
+ *  
+ */
 #include "NetworkServer.h"
 #include <systemd/sd-daemon.h>
 #include <chrono>
@@ -127,6 +138,9 @@ void NetworkServer::stop(){
     
 }
 
+/*
+    start a thread
+*/
 void NetworkServer::start(){
    if (!server_thread.joinable()) {
         if(serverSocket == -1){
@@ -166,9 +180,13 @@ void NetworkServer::start(){
 
 
     }
-}
+}//end_start
 
 
+/*
+run_bg: delegate to the server thread execution
+params: &func
+*/
 void NetworkServer::run_bg(const std::function<void()> &func){
     // Add a job to the network thread's job queue
     std::unique_lock<std::mutex> lock(job_queue_mutex);
@@ -180,7 +198,9 @@ void NetworkServer::run_bg(const std::function<void()> &func){
     job_queue_condition.notify_one();
 
 
-}
+}// end_run_bg
+
+
 const void NetworkServer::heartbeat(){
 
     std::this_thread::sleep_for(std::chrono::seconds(10));
@@ -191,6 +211,10 @@ const void NetworkServer::heartbeat(){
 //    sd_notify(0, "STATUS=NOT_READY");
 }
 
+
+/*
+Constror
+*/
 NetworkServer::NetworkServer(/* args */)
 {
     console_logger =  spdlog::default_logger();
@@ -216,9 +240,14 @@ NetworkServer::NetworkServer(/* args */)
 
     hearbeat_thread.detach();
 
+    // delegate to main thread
+
+}//end_Constructor
 
 
-}
+/*
+on_data_received signal hgandler
+*/
 void NetworkServer::on_data_received(const std::string &data) {
    console_logger->debug("Server Data Received... {}", data.length());
     send(clientSocket, data.c_str(), data.length(), 0);
@@ -243,7 +272,12 @@ void NetworkServer::authenticate(const std::string &data){
             send(clientSocket, "Authentication failed\0", 22, 0);
         }
     }
-}
+}//end_on_data_received
+
+
+/*
+Destructor
+*/
 NetworkServer::~NetworkServer()
 {
     stop();
@@ -252,7 +286,7 @@ NetworkServer::~NetworkServer()
 
 
 void NetworkServer::kill_process(pid_t processId){
-    const char* processName = "your_process_name_or_id_here";
+    const char* processName = "";
 
     // Build the kill command based on the operating system
     // For Unix-like systems (Linux, macOS)
